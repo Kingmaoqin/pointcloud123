@@ -4,7 +4,8 @@ scene: cras
 data_config: configs/data/cras.yaml
 outputs_dir: outputs
 preprocess:
-  max_points: 200000
+  max_points: 20000
+  calibration_points: 1000
   voxel_size: 0.05
   association_distance: 0.05
   target_patch_area: 0.20
@@ -18,4 +19,3 @@ gap:
   alpha_geo: 0.22
   lambda_importance: 0.30
   high_gap_threshold: 0.55
-

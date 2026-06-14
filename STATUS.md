@@ -12,6 +12,9 @@
 - CRAS ZIP contains one fused `CRASLAB_annotated.asc` file with `584701979` total lines from a full stream count.
 - GPU access rechecked with elevated permission: 4 x NVIDIA A100 80GB PCIe are visible; GPU 3 was effectively free at inspection time.
 - `/home/xqin5/.conda/envs/MDPC/bin/python` has `torch 2.6.0+cu124` with CUDA available and 4 visible devices.
+- Installed `ifcopenshell==0.8.5`, `open3d==0.19.0`, `optuna`, `laspy`, `shapely`, and `trimesh` in the active base Python user site.
+- CRAS IFC triangulation succeeded: 256 elements, 604187 vertices, 1197750 triangles, 24 cached materials, 0 geometry failures.
+- CRAS 20000-point ASC smoke association succeeded after robust translation calibration: 10154 matched within 0.05 m, matched ratio 0.5077.
 - Synthetic smoke and held-out tests completed; outputs written under `outputs/`.
 - `pytest -q` passed with 10 tests.
 - Git initial implementation commit: `cf33eb5`.
@@ -21,4 +24,4 @@
 
 - Slurm commands `sbatch` and `srun` were not found on the current node.
 - Default sandboxed `nvidia-smi` could not access the driver, but elevated access confirms GPUs are available.
-- Base Python lacks optional full-processing packages including `open3d`, `ifcopenshell`, and `optuna`.
+- Base Python still lacks `torch`; use `MDPC` for CUDA PyTorch tasks.

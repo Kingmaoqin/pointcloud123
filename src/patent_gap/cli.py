@@ -9,6 +9,7 @@ import pandas as pd
 
 from patent_gap.corruption.synthetic import apply_synthetic_corruption
 from patent_gap.data.audit import write_data_audit
+from patent_gap.data.pointcloud import preprocess_cras_point_sample
 from patent_gap.evaluation.baselines import ablation_table, score_baselines
 from patent_gap.evaluation.metrics import component_metrics, patch_detection_metrics
 from patent_gap.gap.scoring import compute_patch_scores, rank_components
@@ -66,6 +67,10 @@ def command_preprocess(args: argparse.Namespace, overrides: list[str]) -> None:
     if config.get("scene") == "cras":
         data_config = load_yaml(config.get("data_config", "configs/data/cras.yaml"))
         result = triangulate_ifc(data_config.get("ifc_path", "data/raw/craslabbim.ifc"), "data/processed")
+        point_config = dict(data_config)
+        point_config.update(config.get("preprocess", {}))
+        if result.get("triangulated") and Path(point_config.get("pointcloud_zip", "")).exists():
+            result["point_association"] = preprocess_cras_point_sample(point_config, "data/processed")
     (dirs["reports"] / "preprocess_summary.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
     print(f"preprocess complete: {len(patch_scores)} patches, {len(components)} components, {len(ranked_views)} candidate views")
 

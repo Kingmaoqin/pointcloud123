@@ -40,10 +40,12 @@ Base Python had `numpy`, `scipy`, `pandas`, `sklearn`, `matplotlib`, `yaml`, `tq
 
 Missing in base Python at initial inspection: `hydra`, `omegaconf`, `open3d`, `ifcopenshell`, `trimesh`, `laspy`, `shapely`, `torch`, `torchvision`, `optuna`, `tensorboard`, and `pynvml`.
 
+Installed after GPU/resource correction: `ifcopenshell==0.8.5`, `open3d==0.19.0`, `optuna`, `laspy`, `shapely`, and `trimesh`.
+
 The `mdbimdt_baselines` conda environment had `open3d`, `trimesh`, and `torch`, but not `ifcopenshell` or `optuna`.
 
 The `MDPC` conda environment has PyTorch CUDA support and can see all four A100 GPUs.
 
 ## Notes
 
-The first implementation is CPU-only and does not require GPU access. The earlier `nvidia-smi` failure was due to default sandbox access, not missing hardware. Full CRAS IFC triangulation remains blocked until `ifcopenshell` is installed in the active runtime.
+The first implementation is CPU-only and does not require GPU access. The earlier `nvidia-smi` failure was due to default sandbox access, not missing hardware. CRAS IFC triangulation now succeeds in the active runtime after installing `ifcopenshell`.

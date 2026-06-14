@@ -5,6 +5,9 @@
 - Created `/home/xqin5/patent_gap_nbv`.
 - Downloaded CRAS IFC and point cloud ZIP.
 - Verified MD5 checksums for both CRAS files.
+- Installed missing geometry/tuning dependencies and triangulated CRAS IFC.
+- Exported `data/processed/ifc_mesh.npz`, `ifc_elements.parquet`, `ifc_materials.parquet`, and triangle-to-element/GUID maps.
+- Associated a 20000-point CRAS ASC smoke sample to IFC geometry after robust translation calibration; 10154 points matched within 5 cm.
 - Implemented CPU-only synthetic cube pipeline.
 - Implemented six gap indicators, component ranking, candidate view ranking, closed-loop update, baselines, ablations, and deterministic parameter search.
 - Generated Slurm scripts without hard-coded partition names.
@@ -32,7 +35,7 @@ The best fallback search trial is saved in `outputs/reports/best_parameters.yaml
 
 ## CRAS Status
 
-CRAS files are present and checksum-valid. The ZIP contains one fused ASC point cloud. Full IFC triangulation is blocked by missing `ifcopenshell` in the active runtime.
+CRAS files are present and checksum-valid. The ZIP contains one fused ASC point cloud. IFC triangulation succeeded with 256 elements, 604187 vertices, 1197750 triangles, 24 cached materials, and 0 failed geometry elements. A 20000-point point-cloud smoke association matched 50.77% of sampled points within 5 cm after estimating a translation of approximately `[-0.682, 0, 0.667] m`.
 
 ## Important Outputs
 
@@ -55,5 +58,5 @@ CRAS files are present and checksum-valid. The ZIP contains one fused ASC point 
 
 - No Slurm runtime detected on the current node.
 - GPU hardware is available, but the active base Python lacks `torch`; use the `MDPC` environment for CUDA-enabled PyTorch.
-- CRAS full mesh triangulation and IFC GUID-triangle mapping require installing `ifcopenshell`.
-- The current full metrics are synthetic smoke/held-out regression results, not full CRAS benchmark results.
+- Full CRAS point-cloud-to-patch association over the 584M-line ASC file is still a scaling step; smoke mode now validates the association path on 20000 points.
+- The current full metrics are synthetic smoke/held-out regression results, not full CRAS point-cloud benchmark results.
