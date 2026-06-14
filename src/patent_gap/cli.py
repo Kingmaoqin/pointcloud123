@@ -18,7 +18,15 @@ from patent_gap.simulation.synthetic_cube import synthetic_scene
 from patent_gap.utils.config import apply_overrides, ensure_output_dirs, load_yaml
 from patent_gap.utils.repro import save_manifest, set_seed
 from patent_gap.viewpoints.ranking import generate_candidates, greedy_sequential_ranking, score_candidates
-from patent_gap.visualization.plots import plot_baseline_results, plot_closed_loop, plot_component_ranking, plot_patch_bars
+from patent_gap.visualization.plots import (
+    plot_ablation_results,
+    plot_baseline_results,
+    plot_candidate_views,
+    plot_closed_loop,
+    plot_component_ranking,
+    plot_parameter_importance,
+    plot_patch_bars,
+)
 
 
 def _save_core_outputs(config: dict[str, Any], scene: dict[str, pd.DataFrame]) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
@@ -32,10 +40,14 @@ def _save_core_outputs(config: dict[str, Any], scene: dict[str, pd.DataFrame]) -
     ranked_views.to_csv(dirs["tables"] / "candidate_view_ranking.csv", index=False)
     greedy_sequential_ranking(patch_scores, candidates, k=5).to_csv(dirs["tables"] / "candidate_view_greedy.csv", index=False)
     plot_patch_bars(patch_scores, dirs["figures"] / "patch_gap_map.png", "G_gap")
+    plot_patch_bars(patch_scores, dirs["figures"] / "D_sem_map.png", "D_sem")
+    plot_patch_bars(patch_scores, dirs["figures"] / "D_mat_missing_map.png", "D_mat_missing")
+    plot_patch_bars(patch_scores, dirs["figures"] / "D_mat_conflict_map.png", "D_mat_conflict")
     plot_patch_bars(patch_scores, dirs["figures"] / "D_obs_map.png", "D_obs")
     plot_patch_bars(patch_scores, dirs["figures"] / "D_ang_map.png", "D_ang")
     plot_patch_bars(patch_scores, dirs["figures"] / "D_geo_map.png", "D_geo")
     plot_component_ranking(components, dirs["figures"] / "component_gap_map.png")
+    plot_candidate_views(ranked_views, dirs["figures"] / "candidate_views.png")
     return patch_scores, components, ranked_views
 
 
@@ -125,6 +137,7 @@ def command_tune(args: argparse.Namespace, overrides: list[str]) -> None:
             best = row
     df = pd.DataFrame(rows)
     df.to_csv(dirs["optuna"] / "synthetic_trials.csv", index=False)
+    plot_parameter_importance(df, dirs["figures"] / "parameter_importance.png")
     best = best or {}
     (dirs["reports"] / "best_parameters.yaml").write_text("\n".join(f"{k}: {v}" for k, v in best.items()), encoding="utf-8")
     print(json.dumps(best, indent=2))
@@ -159,6 +172,7 @@ def command_evaluate(args: argparse.Namespace, overrides: list[str]) -> None:
     baselines.to_csv(dirs["tables"] / "baseline_results.csv", index=False)
     ablations.to_csv(dirs["tables"] / "ablation_results.csv", index=False)
     plot_baseline_results(baselines.groupby("method", as_index=False)["AUPRC"].mean(), dirs["figures"] / "baseline_comparison.png")
+    plot_ablation_results(ablations, dirs["figures"] / "ablation_results.png")
     print(summary.mean(numeric_only=True).to_string())
 
 
@@ -219,4 +233,3 @@ def main(argv: list[str] | None = None) -> None:
 
 if __name__ == "__main__":
     main()
-
