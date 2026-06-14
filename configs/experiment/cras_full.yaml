@@ -1,0 +1,16 @@
+experiment: cras_full_assoc
+seed: 0
+scene: cras
+data_config: configs/data/cras.yaml
+outputs_dir: outputs
+association:
+  run_name: cras_full_assoc
+  # null means process the whole ASC stream. Override for benchmarks, e.g. max_points=1000000.
+  max_points: null
+  chunk_size: 1000000
+  calibration_points: 5000
+  association_backend: open3d
+  association_distance: 0.05
+  write_point_parts: false
+  resume: true
+

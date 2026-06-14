@@ -9,7 +9,7 @@ import pandas as pd
 
 from patent_gap.corruption.synthetic import apply_synthetic_corruption
 from patent_gap.data.audit import write_data_audit
-from patent_gap.data.pointcloud import preprocess_cras_point_sample
+from patent_gap.data.pointcloud import associate_cras_stream, preprocess_cras_point_sample
 from patent_gap.evaluation.baselines import ablation_table, score_baselines
 from patent_gap.evaluation.metrics import component_metrics, patch_detection_metrics
 from patent_gap.gap.scoring import compute_patch_scores, rank_components
@@ -61,8 +61,6 @@ def command_inspect_data(args: argparse.Namespace, overrides: list[str]) -> None
 def command_preprocess(args: argparse.Namespace, overrides: list[str]) -> None:
     config = apply_overrides(load_yaml(args.config), overrides)
     dirs = ensure_output_dirs(config.get("outputs_dir", "outputs"))
-    scene = synthetic_scene(int(config.get("seed", 0)))
-    patch_scores, components, ranked_views = _save_core_outputs(config, scene)
     result = {}
     if config.get("scene") == "cras":
         data_config = load_yaml(config.get("data_config", "configs/data/cras.yaml"))
@@ -71,8 +69,28 @@ def command_preprocess(args: argparse.Namespace, overrides: list[str]) -> None:
         point_config.update(config.get("preprocess", {}))
         if result.get("triangulated") and Path(point_config.get("pointcloud_zip", "")).exists():
             result["point_association"] = preprocess_cras_point_sample(point_config, "data/processed")
+        message = f"CRAS preprocess complete: triangulated={result.get('triangulated')} cached={result.get('cached', False)}"
+    else:
+        scene = synthetic_scene(int(config.get("seed", 0)))
+        patch_scores, components, ranked_views = _save_core_outputs(config, scene)
+        message = f"preprocess complete: {len(patch_scores)} patches, {len(components)} components, {len(ranked_views)} candidate views"
     (dirs["reports"] / "preprocess_summary.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
-    print(f"preprocess complete: {len(patch_scores)} patches, {len(components)} components, {len(ranked_views)} candidate views")
+    print(message)
+
+
+def command_associate_cras(args: argparse.Namespace, overrides: list[str]) -> None:
+    config = apply_overrides(load_yaml(args.config), overrides)
+    dirs = ensure_output_dirs(config.get("outputs_dir", "outputs"))
+    data_config = load_yaml(config.get("data_config", "configs/data/cras.yaml"))
+    result = triangulate_ifc(data_config.get("ifc_path", "data/raw/craslabbim.ifc"), "data/processed")
+    if not result.get("triangulated"):
+        raise RuntimeError(f"IFC triangulation unavailable: {result}")
+    assoc_config = dict(data_config)
+    assoc_config.update(config.get("association", config.get("preprocess", {})))
+    run_name = str(assoc_config.get("run_name", config.get("experiment", "cras_full_assoc")))
+    summary = associate_cras_stream(assoc_config, "data/processed", run_name=run_name)
+    (dirs["reports"] / f"{run_name}_summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    print(json.dumps(summary, indent=2))
 
 
 def command_corrupt(args: argparse.Namespace, overrides: list[str]) -> None:
@@ -118,28 +136,67 @@ def command_tune(args: argparse.Namespace, overrides: list[str]) -> None:
     dirs = ensure_output_dirs("outputs")
     trials = int(config.get("trials", 50))
     rng = set_seed(int(config.get("seed", 0)))
-    rows = []
-    best = None
-    for trial in range(trials):
-        raw = rng.uniform(0.01, 1.0, size=6)
-        alphas = raw / raw.sum()
-        gap = {
-            "alpha_sem": alphas[0],
-            "alpha_mat_missing": alphas[1],
-            "alpha_mat_conflict": alphas[2],
-            "alpha_obs": alphas[3],
-            "alpha_ang": alphas[4],
-            "alpha_geo": alphas[5],
-            "high_gap_threshold": float(rng.uniform(0.50, 0.85)),
-        }
-        scene = synthetic_scene(int(config.get("seed", 0)) + trial)
+    search_space = config.get("search_space", {})
+    param_names = ["alpha_sem", "alpha_mat_missing", "alpha_mat_conflict", "alpha_obs", "alpha_ang", "alpha_geo"]
+
+    def evaluate_gap(gap: dict[str, float], trial_number: int) -> dict[str, float]:
+        scene = synthetic_scene(int(config.get("seed", 0)) + trial_number)
         patch_scores = compute_patch_scores(scene, gap)
         metrics = patch_detection_metrics(patch_scores)
         objective = 0.4 * metrics["AUPRC"] + 0.3 * metrics["Recall@Top-10%"] - 0.1 * metrics["ECE"]
-        row = {"trial": trial, "objective": objective, **gap, **metrics}
-        rows.append(row)
-        if best is None or objective > best["objective"]:
-            best = row
+        return {"objective": objective, **metrics}
+
+    rows = []
+    try:
+        import optuna
+
+        storage = f"sqlite:///{dirs['optuna'] / 'synthetic_optuna.db'}"
+        sampler = optuna.samplers.TPESampler(seed=int(config.get("seed", 0)))
+        study = optuna.create_study(direction="maximize", sampler=sampler, storage=storage, study_name="synthetic_gap", load_if_exists=True)
+
+        def objective(trial: Any) -> float:
+            raw_values = []
+            for name in param_names:
+                lo, hi = search_space.get(name, [0.01, 1.0])
+                raw_values.append(trial.suggest_float(name, float(lo), float(hi), log=True))
+            raw = pd.Series(raw_values, index=param_names, dtype=float)
+            raw = raw / raw.sum()
+            lo, hi = search_space.get("high_gap_threshold", [0.50, 0.85])
+            gap = {name: float(raw[name]) for name in param_names}
+            gap["high_gap_threshold"] = trial.suggest_float("high_gap_threshold", float(lo), float(hi))
+            metrics = evaluate_gap(gap, trial.number)
+            for key, value in {**gap, **metrics}.items():
+                trial.set_user_attr(key, float(value))
+            return float(metrics["objective"])
+
+        existing = len(study.trials)
+        if existing < trials:
+            study.optimize(objective, n_trials=trials - existing, timeout=config.get("timeout_s"))
+        for trial in study.trials:
+            row = {"trial": trial.number, "objective": trial.value if trial.value is not None else float("nan")}
+            row.update(trial.params)
+            row.update(trial.user_attrs)
+            rows.append(row)
+        best = {"trial": study.best_trial.number, "objective": study.best_value, **study.best_trial.params, **study.best_trial.user_attrs}
+    except Exception as exc:
+        best = None
+        for trial in range(trials):
+            raw = rng.uniform(0.01, 1.0, size=6)
+            alphas = raw / raw.sum()
+            gap = {
+                "alpha_sem": float(alphas[0]),
+                "alpha_mat_missing": float(alphas[1]),
+                "alpha_mat_conflict": float(alphas[2]),
+                "alpha_obs": float(alphas[3]),
+                "alpha_ang": float(alphas[4]),
+                "alpha_geo": float(alphas[5]),
+                "high_gap_threshold": float(rng.uniform(0.50, 0.85)),
+            }
+            metrics = evaluate_gap(gap, trial)
+            row = {"trial": trial, "fallback_reason": str(exc), **gap, **metrics}
+            rows.append(row)
+            if best is None or metrics["objective"] > best["objective"]:
+                best = row
     df = pd.DataFrame(rows)
     df.to_csv(dirs["optuna"] / "synthetic_trials.csv", index=False)
     plot_parameter_importance(df, dirs["figures"] / "parameter_importance.png")
@@ -210,7 +267,7 @@ def command_report(args: argparse.Namespace, overrides: list[str]) -> None:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="patent_gap")
     sub = parser.add_subparsers(dest="command", required=True)
-    for name in ["inspect-data", "preprocess", "corrupt", "compute-gap", "rank-views", "closed-loop", "tune", "evaluate"]:
+    for name in ["inspect-data", "preprocess", "associate-cras", "corrupt", "compute-gap", "rank-views", "closed-loop", "tune", "evaluate"]:
         p = sub.add_parser(name)
         p.add_argument("--config", required=True)
     p = sub.add_parser("report")
@@ -225,6 +282,7 @@ def main(argv: list[str] | None = None) -> None:
     commands = {
         "inspect-data": command_inspect_data,
         "preprocess": command_preprocess,
+        "associate-cras": command_associate_cras,
         "corrupt": command_corrupt,
         "compute-gap": command_compute_gap,
         "rank-views": command_rank_views,

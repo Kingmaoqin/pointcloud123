@@ -23,6 +23,7 @@ python -m patent_gap.cli report --input outputs --output outputs/reports/final_r
 bash scripts/download_cras.sh
 python -m patent_gap.cli inspect-data --config configs/data/cras.yaml
 python scripts/preprocess_cras.py --config configs/experiment/cras_smoke.yaml
+python scripts/run_cras_full_association.py max_points=1000000
 ```
 
 ## Supported CLI
@@ -30,6 +31,7 @@ python scripts/preprocess_cras.py --config configs/experiment/cras_smoke.yaml
 ```bash
 python -m patent_gap.cli inspect-data --config configs/data/cras.yaml
 python -m patent_gap.cli preprocess --config configs/experiment/cras_smoke.yaml
+python -m patent_gap.cli associate-cras --config configs/experiment/cras_full.yaml
 python -m patent_gap.cli corrupt --config configs/corruption/mixed.yaml seed=0
 python -m patent_gap.cli compute-gap --config configs/experiment/synthetic_smoke.yaml
 python -m patent_gap.cli rank-views --config configs/experiment/synthetic_smoke.yaml
@@ -52,4 +54,3 @@ Primary outputs are written to:
 - `outputs/figures/`
 - `outputs/reports/final_report.html`
 - `outputs/reports/reproducibility_manifest.json`
-
