@@ -42,11 +42,11 @@ The framework has output slots for additional baselines and larger-scene oracle 
 - Component ranking
 - Candidate viewpoint generation and ranking
 - Greedy closed-loop supplemental scanning for 5 steps
-- Parameter search with a deterministic fallback when Optuna is unavailable
+- Optuna TPE parameter search with a deterministic fallback when Optuna is unavailable
 - Baseline comparison
 - Ablation table
 - CSV, PNG, HTML, Markdown, and JSON outputs
 
 ## Current CRAS Limit
 
-CRAS files were downloaded and checksummed successfully. IFC triangulation now succeeds after installing `ifcopenshell==0.8.5`; the generated cache contains 256 triangulated elements, 604187 vertices, 1197750 triangles, and zero failed geometry elements. The CRAS smoke point association samples 20000 ASC points, estimates a robust translation to IFC geometry, and associates points by exact closest triangle with a 0.05 m threshold. Full point-cloud-to-patch association on all 584M ASC lines remains the next scaling step.
+CRAS files were downloaded and checksummed successfully. IFC triangulation now succeeds after installing `ifcopenshell==0.8.5`; the generated cache contains 256 triangulated elements, 604187 vertices, 1197750 triangles, and zero failed geometry elements. The CRAS smoke point association samples 20000 ASC points, estimates a robust translation to IFC geometry, and associates points by exact closest triangle with a 0.05 m threshold. The full CRAS ASC stream was processed in 585 resumable chunks using Open3D closest-point queries: 584701977 valid points, 12835294 matched points, and 571866683 unmatched points.

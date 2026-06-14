@@ -15,10 +15,11 @@
 - Installed `ifcopenshell==0.8.5`, `open3d==0.19.0`, `optuna`, `laspy`, `shapely`, and `trimesh` in the active base Python user site.
 - CRAS IFC triangulation succeeded: 256 elements, 604187 vertices, 1197750 triangles, 24 cached materials, 0 geometry failures.
 - CRAS 20000-point ASC smoke association succeeded after robust translation calibration: 10154 matched within 0.05 m, matched ratio 0.5077.
+- CRAS full ASC association completed with Open3D closest-point backend: 584701977 valid points, 12835294 matched within 0.05 m, matched ratio 0.0219518567, 585 chunk summaries, runtime 2491.1 s.
 - Synthetic smoke and held-out tests completed; outputs written under `outputs/`.
-- `pytest -q` passed with 10 tests.
+- `pytest -q` passed with 12 tests.
 - Git initial implementation commit: `cf33eb5`.
-- Latest source commit after visualization completion: `3983fe2`.
+- Latest source commit after full CRAS association pipeline: `7e661dc`.
 
 ## Known Environment Limits
 
