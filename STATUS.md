@@ -13,6 +13,7 @@
 - Synthetic smoke and held-out tests completed; outputs written under `outputs/`.
 - `pytest -q` passed with 10 tests.
 - Git initial implementation commit: `cf33eb5`.
+- Latest source commit after visualization completion: `3983fe2`.
 
 ## Known Environment Limits
 
