@@ -1,0 +1,11 @@
+dataset: cras
+data_root: data
+raw_dir: data/raw
+ifc_path: data/raw/craslabbim.ifc
+pointcloud_zip: data/raw/craslabannotated.zip
+edf_dir: data/raw/edf
+ts40k_repo: external/TS40K
+expected_md5:
+  craslabannotated.zip: e5ecedab8f2a1d1f91861a3aec028a72
+  craslabbim.ifc: e20658f0d2d9e13c62363169b7fa3193
+

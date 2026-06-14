@@ -1,0 +1,29 @@
+name: patent_gap_nbv
+channels:
+  - conda-forge
+  - pytorch
+  - defaults
+dependencies:
+  - python=3.11
+  - numpy
+  - scipy
+  - pandas
+  - scikit-learn
+  - matplotlib
+  - pyyaml
+  - tqdm
+  - pytest
+  - joblib
+  - pyarrow
+  - jinja2
+  - psutil
+  - networkx
+  - pip
+  - pip:
+      - open3d==0.19.0
+      - ifcopenshell==0.8.5
+      - optuna
+      - laspy
+      - plyfile
+      - pynvml
+

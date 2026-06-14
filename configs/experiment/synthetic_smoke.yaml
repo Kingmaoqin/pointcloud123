@@ -1,0 +1,24 @@
+experiment: synthetic_smoke
+seed: 0
+scene: synthetic_cube
+outputs_dir: outputs
+gap:
+  alpha_sem: 0.16
+  alpha_mat_missing: 0.14
+  alpha_mat_conflict: 0.10
+  alpha_obs: 0.22
+  alpha_ang: 0.16
+  alpha_geo: 0.22
+  lambda_importance: 0.30
+  high_gap_threshold: 0.55
+view:
+  distances: [1.5, 2.5, 4.0]
+  azimuth_offsets_deg: [-45, 0, 45]
+  elevation_offsets_deg: [-20, 0, 20]
+  eta: 0.10
+simulation:
+  steps: 5
+  recovery_per_view: 0.85
+tuning:
+  trials: 30
+

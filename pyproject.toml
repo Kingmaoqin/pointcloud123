@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "patent-gap-nbv"
+version = "0.1.0"
+description = "BIM-3D vision spatial information gap analysis and NBV evaluation."
+requires-python = ">=3.10"
+dependencies = [
+  "numpy",
+  "scipy",
+  "pandas",
+  "scikit-learn",
+  "matplotlib",
+  "pyyaml",
+  "tqdm",
+  "pytest",
+  "joblib",
+  "pyarrow",
+  "jinja2",
+  "psutil",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+

@@ -1,0 +1,17 @@
+experiment: tuning_synthetic
+seed: 0
+storage: outputs/optuna/synthetic_trials.csv
+trials: 50
+sampler: tpe_or_fallback
+train_seeds: [0, 1, 2]
+val_seeds: [10, 11]
+test_seeds: [100, 101, 102, 103, 104]
+search_space:
+  alpha_sem: [0.01, 1.0]
+  alpha_mat_missing: [0.01, 1.0]
+  alpha_mat_conflict: [0.01, 1.0]
+  alpha_obs: [0.01, 1.0]
+  alpha_ang: [0.01, 1.0]
+  alpha_geo: [0.01, 1.0]
+  high_gap_threshold: [0.50, 0.85]
+

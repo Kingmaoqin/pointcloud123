@@ -1,0 +1,5 @@
+distances: [1.5, 2.5, 4.0]
+azimuth_offsets_deg: [-45, 0, 45]
+elevation_offsets_deg: [-20, 0, 20]
+eta: 0.10
+

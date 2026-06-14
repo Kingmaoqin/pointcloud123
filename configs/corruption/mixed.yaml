@@ -1,0 +1,13 @@
+name: mixed
+seed: 0
+corruptions:
+  - type: contiguous_patch_removal
+    missing_area_ratio: 0.20
+  - type: quality_degradation
+    point_dropout: 0.50
+    noise_sigma_m: 0.01
+  - type: semantic_label_swap
+    semantic_corruption: 0.20
+  - type: material_missing
+    material_missing: 0.25
+
