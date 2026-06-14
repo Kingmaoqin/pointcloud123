@@ -8,6 +8,7 @@
 - Implemented CPU-only synthetic cube pipeline.
 - Implemented six gap indicators, component ranking, candidate view ranking, closed-loop update, baselines, ablations, and deterministic parameter search.
 - Generated Slurm scripts without hard-coded partition names.
+- Rechecked GPU access with elevated permission: 4 x NVIDIA A100 80GB PCIe are visible.
 - Ran `pytest`: 10 tests passed.
 
 ## Key Held-out Synthetic Metrics
@@ -53,7 +54,6 @@ CRAS files are present and checksum-valid. The ZIP contains one fused ASC point 
 ## Limitations
 
 - No Slurm runtime detected on the current node.
-- No usable GPU driver detected on the current node.
+- GPU hardware is available, but the active base Python lacks `torch`; use the `MDPC` environment for CUDA-enabled PyTorch.
 - CRAS full mesh triangulation and IFC GUID-triangle mapping require installing `ifcopenshell`.
 - The current full metrics are synthetic smoke/held-out regression results, not full CRAS benchmark results.
-

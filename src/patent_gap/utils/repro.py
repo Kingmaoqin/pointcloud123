@@ -27,7 +27,42 @@ def git_commit() -> str:
     return _run(["git", "rev-parse", "HEAD"])
 
 
+def cuda_info() -> dict[str, Any]:
+    info: dict[str, Any] = {
+        "torch_cuda_available": False,
+        "torch_device_count": 0,
+        "nvidia_smi_available": False,
+        "nvidia_smi_summary": _run(
+            [
+                "nvidia-smi",
+                "--query-gpu=index,name,memory.used,memory.total,utilization.gpu",
+                "--format=csv,noheader",
+            ]
+        ),
+    }
+    if not str(info["nvidia_smi_summary"]).startswith("UNAVAILABLE"):
+        info["nvidia_smi_available"] = True
+    try:
+        import torch  # type: ignore
+
+        info["torch_cuda_available"] = bool(torch.cuda.is_available())
+        info["torch_device_count"] = int(torch.cuda.device_count())
+        if info["torch_device_count"]:
+            info["torch_devices"] = [
+                {
+                    "index": i,
+                    "name": torch.cuda.get_device_properties(i).name,
+                    "total_memory_mib": torch.cuda.get_device_properties(i).total_memory // 1024 // 1024,
+                }
+                for i in range(torch.cuda.device_count())
+            ]
+    except Exception as exc:
+        info["torch_error"] = str(exc)
+    return info
+
+
 def build_manifest(config: dict[str, Any], seed: int) -> dict[str, Any]:
+    gpu = cuda_info()
     return {
         "seed": seed,
         "config": config,
@@ -37,7 +72,8 @@ def build_manifest(config: dict[str, Any], seed: int) -> dict[str, Any]:
         "hostname": platform.node(),
         "git_commit": git_commit(),
         "cwd": os.getcwd(),
-        "cuda_available": False,
+        "cuda_available": bool(gpu.get("torch_cuda_available") or gpu.get("nvidia_smi_available")),
+        "gpu": gpu,
     }
 
 
@@ -47,4 +83,3 @@ def save_manifest(path: str | Path, config: dict[str, Any], seed: int) -> dict[s
     with Path(path).open("w", encoding="utf-8") as f:
         json.dump(manifest, f, indent=2, ensure_ascii=False)
     return manifest
-
