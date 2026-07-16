@@ -14,6 +14,14 @@ psutil
 plyfile
 networkx
 rtree
+plotly>=5.20
+gradio>=5.50,<6
+
+# NBV升级(公式26–45)新增依赖:
+# 注意: ortools 9.15 与 open3d 0.19 同进程加载会段错误(abseil/protobuf 符号冲突),
+# 实测 ortools==9.10.4067 可共存 —— 勿升级 ortools 除非重新验证共存性。
+ortools==9.10.4067
+python-tsp==0.5.0
 
 # Optional for full CRAS/IFC processing when available:
 open3d==0.19.0
@@ -25,4 +33,3 @@ optuna
 torch
 torchvision
 pynvml
-

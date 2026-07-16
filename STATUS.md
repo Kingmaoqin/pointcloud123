@@ -1,5 +1,38 @@
 # STATUS
 
+## 2026-07-15 (v5 — 升级方案公式26–45全量实现 + E2 pilot)
+
+按《升级指导》完成实施级升级(详见 `docs/升级实施报告_公式26-45.md`):
+
+### 新模块(全部带单测, 63/63 全绿)
+- `io/station_npz.py` 统一逐站Schema; `sensors/model.py` 公式(30)
+- `occlusion/` 公式(26)–(29): Halton确定性采样 + Embree first-hit + D_occ
+- `density/expected.py` 公式(31)–(34): 物理密度模型 + D_rng
+- `registration/predictor.py` 公式(36)–(40): Fisher信息退化度 + R_reg + D_regsup
+- `gap/scoring.py` 扩展权重表(仅新证据列存在时激活, B1 数值行为回归锁定)
+- `mapping/traversability.py` 公式(43): EDT安全膨胀 + 栅格A*
+- `viewpoints/ranking_v2.py` 公式(35)(41); `planning/` 公式(42)(44) + OR-Tools TSP
+- `simulation/`: 程序化变电站生成器(11类组件)、FallbackSimulator(Gate 0 降级,
+  HELIOS++ 未部署)、公式(45)真实重扫闭环
+- `evaluation/stats.py`: 配对置换/Holm/bootstrap/Cliff's δ
+
+### E2 pilot 结果(3场景×3种子×4方法, 36/36 ok, 6站/400m预算)
+- **B10 全升级: awc=0.938, crit_recall=0.882, 路径156m** —— 全指标最优
+- B1 母专利: awc=0.741, crit_recall=0.228(固定高斯在户外量程下失效)
+- B10 vs B1: awc +0.197, crit_recall +0.654(Holm 后 p=0.042)
+- B10 vs B5(无配准/规划): awc 相当, 路径短 27%, 单位路径增益显著更高
+
+### 关键教训(OPEN_ISSUES #16–18)
+- 公式(37)二值重叠 → 连续覆盖加权(否则硬约束早期误杀全部候选)
+- 集合选择成本必须含 t_scan·v_move 当量; 已执行站 3m 内候选须剔除(防原地重扫)
+- 公式(42) gains 须限制到 G_gap≥τ_gap(与(41) L^new 一致)
+- ρ_0 随仿真角分辨率标定(0.4°→50 点/m²)
+- ortools 锁 9.10.4067(9.15 与 open3d 0.19 同进程段错误)
+
+### 待办(外部依赖, 见 OPEN_ISSUES.md)
+- WHU-TLS 申请/ETH ASL 下载 → E3 station holdout; HELIOS++ 部署 → 一致性测试;
+- B2/B3/B6–B9 基线 + 108 场景全量矩阵 + E2-S 敏感性扫描; Gate 2 相关性验证。
+
 ## 2026-06-20 (v4 - Full audit, controlled evaluation, and local UI)
 
 ### Correctness and robustness fixes

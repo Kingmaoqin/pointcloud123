@@ -20,6 +20,9 @@ dependencies = [
   "pyarrow",
   "jinja2",
   "psutil",
+  "plotly>=5.20",
+  "gradio>=5.50,<6",
+  "trimesh",
 ]
 
 [tool.setuptools.packages.find]
@@ -28,4 +31,4 @@ where = ["src"]
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
-
+markers = ["slow: 长耗时测试(闭环冒烟等)"]

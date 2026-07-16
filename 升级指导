@@ -1,0 +1,528 @@
+# 变电站下一最佳补充扫描轨迹规划——实施级技术方案（数学·代码·数据）
+
+本文档是此前《科研规划报告》的实施级细化，目标读者是执行代码升级的 AI Agent 与研究者本人。全部公式编号从母专利公式(25)之后接续（(26)起），每条给出符号定义、量纲、默认参数、与母专利公式的替换关系；每个代码模块给出文件路径、类/函数签名、伪代码与验收测试；每个数据源给出获取方式、格式规范与已核实/未核实状态。
+
+**约定**：
+- 【事实】= 已核实（本次通过 PyPI/GitHub API 验证，或来自用户提供的专利文件）；
+- 【文献】= 来自已检索文献的结论；
+- 【推断】= 基于工程经验的推断；
+- 【待核实】= 写入方案但执行前必须再确认。
+
+---
+
+# 第一部分 数据落实（先于一切开发）
+
+## 1.1 数据总策略与目录规范
+
+三级数据（仿真主力 / 公开逐站替代 / 合作方真实兜底）全部转换为**统一逐站中间格式**后进入流水线，任何算法模块不得直接读原始格式。
+
+```
+data/
+├── sim/                          # Level 3 HELIOS++仿真
+│   └── scene_{family}_{id}/
+│       ├── scene.xml             # HELIOS++场景
+│       ├── survey_{k}.xml        # 第k次survey（一组扫描站）
+│       ├── model/                # OBJ网格 + components.json(构件语义/重要度)
+│       ├── stations/station_{s}.npz
+│       ├── gt/patch_gt.npz       # Patch级真值（见1.2.6）
+│       └── splits.json           # train/val/test站位拆分
+├── public/
+│   ├── whu_tls/{scene}/stations/station_{s}.npz + poses_gt.json
+│   ├── eth_asl/{scene}/...
+│   └── robotic3d/{scene}/...
+├── real/                         # 合作方脱敏数据（同结构）
+└── traversability/{scene}/grid.npz  # 2.5D可通行图（见公式43）
+```
+
+**station_{s}.npz 统一Schema**（所有模块唯一入口格式）：
+
+| 键 | 类型/形状 | 含义 |
+|---|---|---|
+| `points` | float32 (N,3) | 本站坐标系或全局系点云（`frame`字段标明） |
+| `origin` | float64 (3,) | 扫描仪原点（全局系，米） |
+| `quat_wxyz` | float64 (4,) | 扫描仪姿态四元数 |
+| `station_id` | str | 站唯一ID |
+| `timestamp` | float64 | 采集时间（可为0表示未知） |
+| `intensity` | float32 (N,) 可选 | 反射强度 |
+| `frame` | str | "global" 或 "sensor" |
+| `sensor` | json str | 传感器参数快照（公式30的Θ） |
+
+## 1.2 Level 3：HELIOS++ 物理一致仿真链（主力，最先建）
+
+### 1.2.1 安装（【事实】本次核实）
+- HELIOS++ 官方仓库：`github.com/3dgeo-heidelberg/helios`（前身 `GIScience/helios`，GPL-3.0，本次经 GitHub API 核实前身仓库存在；3dgeo-heidelberg 主仓因 API 限流未二次核实，【待核实】以官方 README 为准）。
+- **重要警告【事实】**：PyPI 上的 `pyhelios`（v2.2.4，"The Helios' toolbox"）与 `helios`（v0.3.0，复杂网络库）**都不是** HELIOS++。HELIOS++ 的 Python 绑定随其 GitHub Release 二进制/conda 包分发。安装方式：下载 GitHub Release 预编译包或 `conda install -c conda-forge helios`（【待核实】conda-forge 渠道名）。
+- 若 HELIOS++ 部署受阻，**降级方案**：用 Open3D `RaycastingScene` 自研简化扫描仿真器（本方案 raycast 模块本就要实现，追加球面扫描射线生成即可；损失波形/大气模型，保留 first-hit 遮挡、量程、角分辨率、噪声——对本项目的四个核心问题已足够）。此降级路径写入 Gate 0。
+
+### 1.2.2 扫描仪参数
+使用 HELIOS++ 自带 TLS 扫描仪预设（`data/scanners_tls.xml`，含 RIEGL VZ-400 等型号，【文献】Winiwarter et al. 2022, RSE 269:112772）。主实验固定一种预设并在敏感性实验中变化：
+- 角分辨率 Δθ=Δφ ∈ {0.02°, 0.04°, 0.08°}（对应公式31）；
+- 量程档 [r_min, r_opt, r_max] 主档取 [0.5, 10, 60] m（【推断】110 kV 站内典型工作距离；r_max 受目标反射率影响，实验中作为变量）；
+- 测距噪声 σ_r = 5 mm（1σ，【推断】TLS 典型量级，敏感性实验取 {2,5,10} mm）。
+
+### 1.2.3 变电站程序化场景生成器（`simulation/scene_gen.py`）
+不依赖任何许可不明的第三方 CAD。用参数化组件库 + 布局规则程序化生成 OBJ 网格与语义标注：
+
+**组件库（每类一个参数化生成函数，输出 trimesh.Trimesh + 语义标签 + 工程重要度 E_i）**：
+
+| 类别 | 参数示例 | E_i 默认 |
+|---|---|---|
+| 主变压器 transformer | 长宽高 8×4×5 m、散热片数 | 1.0 |
+| 断路器 breaker | 三相柱高 3–5 m、相间距 1.5–2.5 m | 0.9 |
+| 隔离开关 disconnector | 双柱/三柱、臂长 | 0.8 |
+| 电流/电压互感器 CT/PT | 柱高 2–4 m | 0.8 |
+| 避雷器 arrester | 柱高 1.5–3 m | 0.6 |
+| 绝缘子串 insulator | 伞裙数 8–15、直径 0.2–0.3 m | 0.7 |
+| 管型母线 busbar | 直径 0.1–0.2 m、跨长 10–30 m、离地 4–8 m | 0.7 |
+| 构架/门型架 gantry | 高 8–12 m、格构杆件 | 0.4 |
+| 围栏 fence | 高 2.2 m | 0.2 |
+| 控制楼 building | 10×6×4 m 盒体+门窗 | 0.3 |
+| 电缆沟盖板/道路 road | 宽 3–5 m | 0.1（构成可通行面） |
+
+【推断】以上尺寸为 110 kV 户外站典型量级，用于生成"物理一致"而非"某座真实站的复刻"；报告与论文中必须表述为"参数化合成变电站"。
+
+**布局规则（伪代码）**：
+```
+generate_scene(seed, size∈{S,M,L}, density∈{low,mid,high}):
+  1. 生成地面平面 + 主干道路网格（Manhattan式，间距12–20m）
+  2. 沿道路两侧放置 2–4 个间隔（bay）：每间隔 = 断路器+隔离开关×2+CT/PT，
+     相间距与对地净距按参数表；间隔间距 8–15 m
+  3. 放置 1–2 台主变（带防火墙盒体，制造强遮挡体）
+  4. 架设门型构架 + 管母跨越（制造高空遮挡与细长目标）
+  5. 外围围栏；随机放置 0–3 个杂物箱体（噪声遮挡物）
+  6. 按 density 缩放间隔数量与母线层数
+  7. 导出 scene.obj（每构件独立 group，写 components.json：
+     {comp_id: {class, E_i, triangles:[t0,t1,...]}}）
+  8. 生成安全禁入区多边形：每带电构件足印外扩 d_safe(class)
+     —— 110kV 设备不停电作业安全距离取 1.5 m（【待核实】依据
+     GB 26860《电力安全工作规程》类规范，执行前以合作方规程核对；
+     代码中为 per-class 可配置表 safety_clearance.yaml）
+```
+产出规模：3 个 size 族 × 3 个 density × ≥12 seeds = ≥108 个场景；train/test 按 **seed 整场景划分**（同一场景的任何站位不得跨集合，杜绝近重复泄漏）。
+
+### 1.2.4 Survey（扫描站）生成
+每场景生成两类站集：
+- **初始站集 S_init**（模拟"已扫但有缺口"）：沿主干道路等距 15–25 m 撒 3–6 站，故意不进入间隔内部 → 天然产生遮挡缺口与远距低密度缺口；
+- **参考完备站集 S_full**（用于构造真值）：网格化撒站（间距 8 m，剔除禁入区）扫描全场。
+
+Survey XML 关键字段（HELIOS++）：`scannerSettings`（型号、Δθ、pulse频率）、每站 `<leg>` 的 `platformSettings x y z`、`headRotate` 全周扫描。由 `helios_bridge.py` 模板化生成（见第三部分 3.7）。
+
+### 1.2.5 输出解析
+HELIOS++ 输出逐站 xyz/las + 光线记录。`helios_bridge.parse_output()` 转为统一 NPZ；保留 `gpsTime` 与命中构件 ID（HELIOS++ 支持 hitObjectId 输出，【待核实】版本相关字段名）。
+
+### 1.2.6 Patch 级缺扫真值构造（核心，替代母专利 Y 坐标留出）
+对每个 Patch i（母专利公式1–7 生成）：
+```
+真值覆盖率 C_gt_i   = 由 S_full 扫描点按母专利公式(9)(10)关联后，
+                      Patch内被覆盖采样点比例
+真值密度   ρ_gt_i   = S_full 关联点数 / A_i
+初始覆盖率 C_init_i = 仅用 S_init 同法计算
+真值缺口标签 y_i    = I[C_init_i < 0.5 · C_gt_i]   （相对完备扫描的缺口）
+真值遮挡标签 o_i,v  = 公式(27)(28)对任意站v可直接计算（模型已知）
+```
+存 `gt/patch_gt.npz`：`{patch_id, C_gt, rho_gt, C_init, y, A, E, class}`。
+
+## 1.3 Level 2：公开逐站数据（替代真实、支撑 station holdout）
+
+| 数据源 | 获取方式 | 逐站原点 | 用途 | 状态 |
+|---|---|---|---|---|
+| WHU-TLS（Dong et al. 2020, ISPRS J. 163:327–342） | 3s.whu.edu.cn 填 Data Request，CC-BY-NC-ND-3.0 | 有（含真值变换+配准图） | station holdout 主力；配准预测-实际相关性验证（Gate 2） | 【文献】已核实存在；申请周期【待核实】 |
+| ETH ASL "Challenging datasets for point cloud registration"（Pomerleau et al.） | projects.asl.ethz.ch 直接下载 | 有（每scan含GT位姿） | 配准基线校准、Fisher信息模块验证 | 【文献】 |
+| Robotic 3D Scan Repository（Univ. Würzburg/Osnabrück，Bremen City 等） | kos.informatik.uos.de 下载 | 有（scan poses） | 大场景户外 station holdout 补充 | 【文献】；具体场景清单【待核实】 |
+| EDF 工业锅炉房（ENS challenge 数据，含点→站索引） | ENS challenge 注册 | 有（站索引） | 工业密集管网遮挡替代 | 【待核实】当前是否仍开放注册 |
+| Industrial3D（水处理厂多站 TLS） | 论文声明将公开（GitHub） | 有 | 备选 | 【待核实】截至撰写未确认已发布，**不得写入论文实验计划的必选项** |
+
+**station holdout 协议（实验3，精确定义）**：对含 K 站的场景，随机取 ⌈K/3⌉ 站为 S_init，其余为隐藏集 S_hid；算法只见 S_init 与（若有）粗模型；算法输出推荐站集 Ŝ；评价时对每个 ŝ∈Ŝ 以最近邻匹配 S_hid 中真实站（距离阈值 3 m 内），用匹配站的真实点云执行"补扫"，计算恢复指标与真实配准成功率。无粗模型的公开场景（WHU-TLS 无 IFC）：用 S_init 点云做泊松/Alpha-shape 粗网格作为几何代理（论文中明确标注"无 BIM 语义、几何-only 模式"，语义/材料证据经母专利公式(18)(19)的 K_i 机制自动退出融合——这正是可用性重归一化设计的用武之地）。
+
+## 1.4 Level 1：合作方真实变电站数据需求单（字段级，随合作协议发出）
+1. 逐站原始点云（e57/ptx/las 任一，**必须含每站扫描仪原点与姿态**；e57 与 ptx 原生含此信息，合并 las 通常丢失——向合作方明确"要工程原始工程文件，不要合并成果"）；
+2. 站位布置图或外业记录表；3. CAD/BIM/IFC 或竣工图；4. 设备台账（类别→重要度映射）；5. 安全禁入区/净空区图层；6. 脱敏要求清单。
+**降级判定**（Gate 4）：仅有合并点云 → 只做缺口诊断案例；有逐站无模型 → 几何-only 全流程；两者皆有 → 完整实验4。
+
+---
+
+# 第二部分 数学规格书（公式26–45，接续母专利公式1–25）
+
+## 2.0 与母专利公式的替换总表
+
+| 母专利公式 | 处置 | 新公式 |
+|---|---|---|
+| (1)–(7) Patch几何 | **保留** | — |
+| (8) 双法向区域生长 | **保留** | — |
+| (9)(10) 点-面关联 | **保留** | — |
+| (11) D_obs | 保留，R_i 改由公式(39)配准预测提供 | (39)→(11) |
+| (12) D_ang | **保留** | — |
+| (13) D_geo | 保留，ρ_i 改用公式(34)量纲化密度比 | (34)→(13) |
+| (14)(15) D_sem | 保留（变电站类别表替换建筑类别表） | — |
+| (16)(17) D_mat | 保留但默认权重下调至0.05/0.05并消融 | — |
+| (18)(19) K_i重归一化 | **保留并扩充** K_i ∪ {occ, rng, regsup} | (29)(34)(40) |
+| (20) G_task | **保留** | — |
+| (21)(22) 候选位姿生成 | 保留几何构造；候选点集改为可通行图节点约束 | (43) |
+| (23) 正视性 f | **保留** | — |
+| (24) 质量 q（固定高斯） | **替换** | (35) |
+| (25) 视点价值 V | **替换** | (41) |
+| 实施例9 固定恢复率0.75 | **替换**为真实重扫仿真 | (45) |
+
+## 2.1 遮挡模块
+
+**(26) Patch 确定性表面采样**。对 Patch i，按三角面面积加权分配采样数，面内用分层重心坐标（Halton 序列驱动，种子=hash(patch_id) 保证确定性）：
+$$M_i^{s} = \mathrm{clip}\left(\lceil A_i / a_0 \rceil,\ M_{\min},\ M_{\max}\right),\quad \{s_{i,m}\}_{m=1}^{M_i^s} \subset \bigcup_{t\in T_i} t$$
+符号：A_i Patch面积(m²)；a_0 采样密度参数=0.01 m²/点；M_min=4，M_max=64。确定性保证同一 Patch 任意两次评估采样一致（可复现要求）。
+
+**(27) first-hit 可见函数**。从候选站原点 o_v 向采样点 s 发射线，在全场景三角集 T_all 上取首命中：
+$$\mathrm{vis}(o_v, s_{i,m}) = \mathbb{I}\left[\ \mathrm{firsthit}(o_v \to s_{i,m}) \in T_i\ \wedge\ t_{hit} \ge \lVert s_{i,m}-o_v\rVert_2 - \varepsilon\ \right]$$
+ε=0.01 m（自遮挡数值容差）；firsthit 由 BVH 加速射线求交实现（第三部分 3.2）。
+
+**(28) 视点-Patch 遮挡可见率**：
+$$\mathrm{Vis}_{i,v} = \frac{1}{M_i^s}\sum_{m=1}^{M_i^s} \mathrm{vis}(o_v, s_{i,m}) \in [0,1]$$
+
+**(29) 遮挡缺口证据**（新证据项，进入母专利公式(18)的 K_i）。设 S_obs 为已执行的扫描站集合：
+$$D_i^{occ} = 1 - \max_{v \in S_{obs}} \mathrm{Vis}_{i,v}$$
+含义：即使最优已有站也看不见的比例。无模型或无站位时该项不可计算→按 K_i 机制退出融合。量纲：无量纲[0,1]。默认权重 α_occ=0.18（进入公式(19)后其余权重按比例缩小，消融A1验证）。
+
+## 2.2 量程与点密度模块
+
+**(30) 传感器参数组**：
+$$\Theta = (r_{\min}, r_{opt}, r_{\max}, \Delta\theta, \Delta\phi, \sigma_r, f_{pulse})$$
+单位：r 米；Δθ、Δφ 弧度（角分辨率）；σ_r 米（测距噪声1σ）；f_pulse Hz。随 station NPZ 的 `sensor` 字段持久化，禁止硬编码。
+
+**(31) 预期点密度**（替换母专利公式(24)中以 2.5 m 为中心的固定高斯的物理依据）：
+$$\hat{\rho}_{i,v} = \frac{\cos\alpha_{i,v}}{d_{i,v}^2\,\Delta\theta\,\Delta\phi}\cdot \mathbb{I}[r_{\min}\le d_{i,v}\le r_{\max}] \quad [\text{点/m}^2]$$
+d_{i,v}=‖o_v−c_i‖₂；入射角 α_{i,v}=arccos(|n_i·unit(o_v−c_i)|)。推导：单条激光束在距离 d 的角足印面积 ≈ d²ΔθΔφ/cosα（【推断】小角近似，TLS 标准几何）。
+
+**(32) 入射角有效回波因子**（可选精化，默认关闭，敏感性实验开启）：
+$$\eta_{inc}(\alpha) = \max(\cos\alpha - \cos\alpha_{max},\ 0)/(1-\cos\alpha_{max}),\ \alpha_{max}=80°$$
+模拟掠射角漏检；开启时 ρ̂ 乘以 η_inc。
+
+**(33) 量程-密度质量项**：
+$$g^{rng}_{i,v} = \mathrm{clip}\left(\hat{\rho}_{i,v}\,/\,\rho^{req}_i,\ 0,\ 1\right),\qquad \rho^{req}_i = \rho_0\,(1 + \lambda_E E_i)$$
+ρ_0=400 点/m²（【推断】设备级建模常用量级，pilot 标定）；λ_E=1.0 → 关键设备要求密度加倍。
+
+**(34) 量程密度缺口证据**（新证据项，同时修正母专利公式(13)中无量纲 ρ_i 的含糊）：
+$$D_i^{rng} = 1 - \mathrm{clip}\left(\rho^{obs}_i / \rho^{req}_i,\ 0,\ 1\right),\qquad \rho^{obs}_i = N^{pts}_i / A_i$$
+N_pts_i 为按公式(9)(10)关联到 Patch i 的实测点数。默认权重 α_rng=0.15。
+
+**(35) 升级质量公式（替换母专利公式24）**：
+$$q'_{j,v} = f_{j,v}\cdot g^{rng}_{j,v}\cdot \mathrm{Vis}_{j,v}$$
+f_{j,v} 为母专利公式(23)正视性。母专利(24)中的距离高斯 exp(−(d−2.5)²/8) 与经验衰减 clip(1/(1+0.15d),0,1) **整体删除**，由物理密度模型 g^rng 取代（消融A2回退对照）。
+
+## 2.3 配准感知模块
+
+**(36) 双区域划分**。候选站 v 的视场内 Patch 集 L_v（母专利公式(25)定义的正视性/视场/距离条件不变，距离条件改用 [r_min,r_max]）拆分为：
+$$L_v^{new} = \{j\in L_v:\ G^{gap}_j \ge \tau_{gap}\},\qquad L_v^{ovl} = \{j\in L_v:\ C_j \ge \tau_{cov}\}$$
+τ_gap=0.55（沿母专利实施例6），τ_cov=0.5；两集合可交叠（一个 Patch 可同时贡献信息与锚定）。
+
+**(37) 预期重叠率**（面积-质量加权）：
+$$O^{reg}(v) = \frac{\sum_{j\in L_v^{ovl}} A_j\, q'_{j,v}}{\sum_{j\in L_v} A_j\, q'_{j,v} + \epsilon_0},\quad \epsilon_0=10^{-6}$$
+
+**(38) 配准可解性（point-to-plane Fisher 信息）**。对 L_v^ovl 的采样点 p_k（公式26采样）与其法向 n_k，构造 6×6 信息矩阵：
+$$H(v) = \sum_k J_k^\top J_k,\quad J_k = \left[\,n_k^\top,\ (p_k - \bar{p})\times n_k\,\right]^\top \in \mathbb{R}^{6}$$
+（平移3维+旋转3维；p̄ 为锚定点重心，用于数值调理。）退化风险以特征值比定义：
+$$\mathrm{Degen}(v) = 1 - \lambda_{\min}(\tilde{H}) / \lambda_{\max}(\tilde{H}) \in [0,1)$$
+H̃ 为对角块分别按 trace 归一后的 H（消除平移/旋转量纲差）。含义：变电站平行管母/圆柱阵列 → 沿轴向不可观 → λ_min→0 → Degen→1。【文献】该构造与 point-to-plane ICP 的高斯-牛顿 Hessian 一致，与主动 SLAM 中 localizability 度量同源。
+
+**(39) 配准支持增益**：
+$$R^{reg}(v) = \mathrm{clip}\!\left(\frac{O^{reg}(v)}{O_{\min}},0,1\right)\cdot\left(1-\mathrm{Degen}(v)\right)^{\gamma},\quad O_{\min}=0.30,\ \gamma=1$$
+O_min=30% 为最小可配准重叠（【文献】TLS 规划惯例 20–33%，pilot 标定）。同时 R^reg 回填母专利公式(11)的配准置信度 R_i：对已执行站取 R_i = R^reg(v_s)。
+
+**(40) 配准支持缺口证据**（新证据项）：
+$$D_i^{regsup} = 1 - \max_{v\in S_{obs}} \left[\mathbb{I}[i\in L_v]\cdot R^{reg}(v)\right]$$
+默认权重 α_regsup=0.10。至此 K_i 全集 = {obs .22→.15, ang .16→.11, geo .22→.15, sem .16→.11, mat_miss .14→.05, mat_conf .10→.05, occ .18, rng .15, regsup .10}（重排后权重和=1.05→按公式(19)自动归一；各权重为初值，敏感性实验扫描）。
+
+**(41) 升级视点价值（替换母专利公式25）**：
+$$V'(v) = \underbrace{\sum_{j\in L_v^{new}} G^{task}_j\, A_j\, q'_{j,v}}_{\text{新信息收益 } I(v)} \;+\; \lambda_{reg}\, \bar{A}_v\, R^{reg}(v) \;-\; \eta\, O_v$$
+Ā_v = mean(A_j, j∈L_v^new)（使配准项与信息项同量纲：分数×m²）；λ_reg=0.5、η=0.10 沿母专利冗余惩罚。**硬约束**：O^reg(v) < O_min 或 Vis 全零的候选直接剔除（不进入软评分）。
+
+## 2.4 集合选择与轨迹规划
+
+**(42) 覆盖概率与子模集合函数**。单站对 Patch 的"覆盖成功概率"取 c_{j,v}=q'_{j,v}∈[0,1]；站集合 S 的期望收益：
+$$F(S) = \sum_j G^{task}_j A_j \left(1 - \prod_{v\in S}(1 - c_{j,v})\right)$$
+【文献结论】F 单调子模 → 预算约束下懒惰贪心有 (1−1/e)≈0.632 近似保证。贪心每步在"可行候选"（已剔除硬约束违规者）中选边际增益/边际成本比最大者（cost-benefit greedy）。
+
+**(43) 2.5D 可通行图与安全膨胀**。地面栅格（分辨率 0.25 m），单元 g 可通行当且仅当：
+$$\mathrm{trav}(g)=\mathbb{I}[\text{slope}(g)\le s_{\max}]\cdot\mathbb{I}[\mathrm{clear}(g)\ge h_{robot}]\cdot\mathbb{I}[g\notin \mathcal{Z}_{safe}\oplus r_{infl}]$$
+s_max=10°；h_robot=1.8 m（车体+扫描仪高）；Z_safe 为安全禁入多边形集；⊕r_infl 为形态学膨胀，r_infl = r_robot + d_safe(class)，r_robot=0.6 m，d_safe 按类别表（110 kV 带电体 1.5 m【待核实】）。候选站位仅从 trav=1 单元中生成（母专利公式(21)(22)生成的几何候选点投影到最近可通行单元，投影距离>2 m 则弃）。
+
+**(44) 联合轨迹目标（逐项精确式）**。轨迹 π = (v_0→v_1→…→v_M)，v_0 为当前位姿，站间距离 dist(v_a,v_b) 为可通行图上 A* 最短路长：
+$$J(\pi) = \frac{F(\{v_1..v_M\})}{F^{ub}} + \lambda_{reg}\min_{k} R^{reg}(v_k) - \lambda_{len}\frac{\sum_k \mathrm{dist}(v_{k-1},v_k)}{L_{diag}} - \lambda_{sta}\frac{M}{M_{max}}$$
+F^ub = Σ_j G_task_j A_j（全恢复上限，使首项∈[0,1]）；L_diag 场景对角线；λ_reg=0.3、λ_len=0.4、λ_sta=0.2（初值，Pareto 实验扫描）。时间项 T=Σdist/v_move + M·t_scan（v_move=0.5 m/s，t_scan=180 s/站）作为**预算约束** Σ≤B 而非目标项（约束式比软惩罚更可解释，为 RQ5 保留软惩罚版本对照）。安全违规为硬约束（不可行）。
+
+**(45) 求解与真实闭环更新**。三段流水线：
+1. **选站**：公式(42)懒惰贪心在预算 B 内选 Ŝ；
+2. **定序**：Ŝ∪{v_0} 上以 dist 为边权解开环 TSP（OR-Tools 路由求解器；若候选按设备簇分组可用 Noon-Bean 变换转 GTSP→TSP，主方案先用平坦 TSP）；
+3. **闭环**（替换母专利实施例9的固定恢复率0.75）：执行 π 的首站后，仿真中**直接用 HELIOS++/raycast 重扫**得到真实新增点云 → 重跑公式(9)(10)关联与全部证据 → G_gap 更新 → 重新选站定序。恢复率成为**测量结果**而非假设参数。真实数据 station holdout 中"执行"= 取最近邻隐藏站真实点云（1.3节协议）。
+
+---
+
+# 第三部分 代码构建方法（模块级签名、伪代码与验收测试）
+
+## 3.0 依赖环境（本次经 PyPI 核实的版本，【事实】）
+
+```
+open3d==0.19.0        # t.geometry.RaycastingScene（CPU Embree后端）——遮挡/仿真核心
+trimesh==4.12.2       # 网格处理、程序化场景生成
+embreex==4.4.0        # trimesh的Embree加速（可选，RaycastingScene已够用）
+ortools==9.15.*       # TSP/路由求解
+python-tsp==0.5.0     # 轻量TSP备选（局部搜索/精确小规模）
+ifcopenshell==0.8.5   # IFC解析（母专利已有链路）
+laspy==2.7.0          # LAS读写
+numpy scipy networkx pyyaml
+# TEASER++：PyPI无包（本次核实teaserpp-python不存在），需从
+# github.com/MIT-SPARK/TEASER-plusplus 源码编译（MIT许可）——仅作实验3/4
+# 的配准评价基线，主流水线不依赖它；FPFH+RANSAC与ICP用Open3D内置。
+# HELIOS++：非pip安装，见1.2.1；helios_bridge.py通过subprocess调用其可执行文件。
+```
+
+## 3.1 仓库增量结构（在母专利代码库上新增/改造）
+
+```
+src/patent_gap/
+├── sensors/model.py            [新] SensorModel(Θ) 公式(30)
+├── occlusion/
+│   ├── sampling.py             [新] 公式(26)
+│   └── raycast.py              [新] 公式(27)(28)，RaycastingScene封装
+├── density/expected.py         [新] 公式(31)–(34)
+├── registration/
+│   ├── predictor.py            [新] 公式(36)–(40)
+│   └── baselines.py            [新] ICP/p2plane/FPFH+RANSAC(+TEASER++可选)
+├── evidence/                   [改] 挂接 D_occ/D_rng/D_regsup 进K_i
+├── gap/scoring.py              [改] 权重表扩充，公式(19)不变
+├── mapping/traversability.py   [新] 公式(43)
+├── viewpoints/
+│   ├── candidates.py           [改] 公式(21)(22)+可通行投影+硬约束过滤
+│   └── ranking.py              [改] V(v)→V'(v) 公式(35)(41)
+├── planning/
+│   ├── set_select.py           [新] 公式(42) 懒惰贪心
+│   ├── route.py                [新] A*距离矩阵 + OR-Tools TSP
+│   └── objective.py            [新] 公式(44) J(π)与预算约束
+├── simulation/
+│   ├── scene_gen.py            [新] 1.2.3 程序化变电站
+│   ├── helios_bridge.py        [新] survey生成/调用/解析（含raycast降级仿真器）
+│   └── closed_loop.py          [改] 公式(45) 真实重扫闭环
+├── io/station_npz.py           [新] 1.1 统一Schema读写与校验
+└── evaluation/
+    ├── metrics.py              [新] 第十一章全部指标
+    └── stats.py                [新] bootstrap/置换检验/Holm
+tests/                          [新] 每模块单测（Gate 1–3 即测试套件）
+experiments/configs/*.yaml      [新] 实验矩阵配置
+```
+
+## 3.2 occlusion/raycast.py（Gate 1 核心）
+
+```python
+class OcclusionOracle:
+    def __init__(self, vertices: np.ndarray, triangles: np.ndarray,
+                 tri_to_patch: np.ndarray):        # (T,) 三角面→patch_id
+        import open3d as o3d
+        self.scene = o3d.t.geometry.RaycastingScene()
+        mesh = o3d.t.geometry.TriangleMesh(
+            o3d.core.Tensor(vertices.astype(np.float32)),
+            o3d.core.Tensor(triangles.astype(np.uint32)))
+        self.geom_id = self.scene.add_triangles(mesh)
+        self.tri_to_patch = tri_to_patch
+
+    def visibility(self, origin, samples, target_patch, eps=0.01) -> float:
+        d = samples - origin[None, :]
+        dist = np.linalg.norm(d, axis=1)
+        rays = np.hstack([np.tile(origin, (len(samples), 1)),
+                          d / dist[:, None]]).astype(np.float32)
+        ans = self.scene.cast_rays(o3d.core.Tensor(rays))
+        t_hit = ans['t_hit'].numpy()                  # 首命中距离
+        prim  = ans['primitive_ids'].numpy()          # 首命中三角面id
+        ok = np.isfinite(t_hit) & (t_hit >= dist - eps) & \
+             (self.tri_to_patch[np.minimum(prim, len(self.tri_to_patch)-1)]
+              == target_patch)
+        return float(ok.mean())                       # 公式(28)
+```
+说明：`cast_rays` 返回 `t_hit` 与 `primitive_ids`，即 first-hit 语义（Embree BVH，【事实】Open3D 0.19 API）。批量化：一个候选站对全部目标 Patch 的采样点拼成单次 cast_rays（射线数 10⁴–10⁵/站，CPU 毫秒–百毫秒级）。
+
+**单测（tests/test_raycast.py，= Gate 1 判据）**：
+1. "前挡板(z=1)+后目标(z=2)"两平面，站在 z=0：断言目标 Vis=0、挡板 Vis=1；
+2. 挡板开 50% 孔洞：断言 |Vis−0.5|<0.05；
+3. 盒体背面 Patch：断言 Vis=0。
+
+## 3.3 density/expected.py
+
+```python
+@dataclass
+class SensorModel:                                    # 公式(30)
+    r_min: float; r_opt: float; r_max: float
+    dtheta: float; dphi: float                        # 弧度
+    sigma_r: float; f_pulse: float
+
+def expected_density(d, cos_inc, sm):                 # 公式(31)
+    rho = cos_inc / (d**2 * sm.dtheta * sm.dphi)
+    return np.where((d >= sm.r_min) & (d <= sm.r_max), rho, 0.0)
+
+def g_rng(d, cos_inc, rho_req, sm):                   # 公式(33)
+    return np.clip(expected_density(d, cos_inc, sm) / rho_req, 0, 1)
+```
+**单测**：Δθ=Δφ=0.04°、d=10 m、正视 → ρ̂=1/(100·(6.981e-4)²)≈2.05e4 点/m²；d 加倍 → ρ̂/4（±1%）。仿真校准：扫平板，实测密度与 ρ̂ 相对误差<15%（Gate 1 附加判据）。
+
+## 3.4 registration/predictor.py（Gate 2 核心）
+
+```python
+def degeneracy(points, normals, centroid):            # 公式(38)
+    lever = np.cross(points - centroid, normals)
+    J = np.hstack([normals, lever])                   # (K,6)
+    H = J.T @ J
+    Ht, Hr = H[:3, :3], H[3:, 3:]
+    Hn = np.block([[Ht/np.trace(Ht), np.zeros((3,3))],
+                   [np.zeros((3,3)), Hr/np.trace(Hr)]])
+    lam = np.linalg.eigvalsh(Hn)
+    return 1.0 - lam[0] / lam[-1]
+
+def r_reg(overlap, degen, o_min=0.30, gamma=1.0):     # 公式(39)
+    return np.clip(overlap / o_min, 0, 1) * (1 - degen) ** gamma
+```
+**Gate 2 验收（tests/test_reg_correlation.py）**：≥200 个（场景,站对）上，R_reg 与真实 point-to-plane ICP 成功标志（相对真值 ε_t=0.1 m、ε_r=2°）的 Spearman ρ>0.6。退化专项：纯平行圆柱阵列场景断言 Degen>0.8 且 ICP 沿轴漂移。baselines.py 封装 Open3D `registration_icp`、`compute_fpfh_feature`+RANSAC；TEASER++ try-import 可选。
+
+## 3.5 mapping/traversability.py 与 planning/route.py
+
+```python
+class TravGrid:                                       # 公式(43)
+    def __init__(self, ground_mesh, obstacles, safety_polys,
+                 res=0.25, s_max_deg=10, r_infl_map=None): ...
+    def is_free(self, xy) -> bool: ...
+    def astar(self, a_xy, b_xy): ...                  # networkx栅格A*
+
+def solve_tsp(dist_matrix, start=0):                  # OR-Tools
+    mgr = pywrapcp.RoutingIndexManager(len(dist_matrix), 1, start)
+    rt  = pywrapcp.RoutingModel(mgr)
+    cb  = rt.RegisterTransitCallback(lambda i, j:
+            int(dist_matrix[mgr.IndexToNode(i)][mgr.IndexToNode(j)] * 100))
+    rt.SetArcCostEvaluatorOfAllVehicles(cb)
+    p = pywrapcp.DefaultRoutingSearchParameters()
+    p.first_solution_strategy = FirstSolutionStrategy.PATH_CHEAPEST_ARC
+    p.local_search_metaheuristic = LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
+    p.time_limit.seconds = 10
+    return extract_route(rt.SolveWithParameters(p), mgr)
+```
+**Gate 3 单测**：50 随机场景路径逐段栅格碰撞=0；起点不可达候选在选站层被剔除（无孤立站断言）。
+
+## 3.6 planning/set_select.py（懒惰贪心，公式42）
+
+```python
+def lazy_greedy(candidates, c_jv, gains_j, cost_v, budget):
+    # c_jv稀疏矩阵; 维护 uncov_j = G_task_j*A_j*Π_{v∈S}(1-c_jv)
+    heap = [(-upper_bound(v), 0, v) for v in candidates]; heapify(heap)
+    S, spent = [], 0.0
+    while heap:
+        neg, stamp, v = heappop(heap)
+        if spent + cost_v[v] > budget: continue
+        if stamp < len(S):                            # 懒惰重估
+            heappush(heap, (-marginal(v, S) / cost_v[v], len(S), v)); continue
+        S.append(v); spent += cost_v[v]; update_uncov(v)
+    return S
+```
+cost_v = 到当前站集最近站的 A* 距离 + t_scan·v_move 当量（时间折算为等效距离，保持单一预算维度）；精确 J(π) 在 route.py 定序后重算。**单测**：5 站 6 Patch 玩具例与穷举最优对拍，贪心 ≥ 0.63×最优。
+
+## 3.7 simulation/helios_bridge.py（含降级仿真器）
+
+```python
+SURVEY_TMPL = """<?xml version="1.0"?>
+<document><survey name="{name}" scene="{scene_xml}#scene"
+  platform="data/platforms.xml#tripod"
+  scanner="data/scanners_tls.xml#{scanner_id}">
+{legs}</survey></document>"""
+LEG_TMPL = """<leg><platformSettings x="{x}" y="{y}" z="{z}"/>
+  <scannerSettings active="true" pulseFreq_hz="{pf}"
+    verticalResolution_deg="{vr}" horizontalResolution_deg="{hr}"/></leg>"""
+
+def run_survey(scene_dir, stations, scanner_id="riegl_vz400"):
+    """渲染XML→subprocess调用helios可执行→parse为station_{s}.npz。
+    预设id/字段名以所装版本data/目录为准（【待核实】版本差异）。"""
+
+class FallbackSimulator:
+    """降级仿真器：RaycastingScene球面扫描。
+    (Δθ,Δφ)方位×俯仰网格射线→cast_rays→首命中点+N(0,σ_r)距离噪声
+    →公式(32)入射角丢弃→统一NPZ。与HELIOS++输出Schema一致，上层零改动。"""
+```
+**一致性测试**：同场景同站，Fallback 与 HELIOS++ 的 Patch 覆盖率向量 Spearman ρ>0.9；HELIOS++ 不可用则 Fallback 即主仿真器并在论文如实说明。
+
+## 3.8 evaluation/stats.py
+
+```python
+def paired_permutation(x, y, n=10000, seed=0):        # 双侧配对置换
+    d = x - y; rng = np.random.default_rng(seed); t0 = d.mean()
+    ts = [(d * rng.choice([1, -1], d.size)).mean() for _ in range(n)]
+    return float((np.abs(ts) >= abs(t0)).mean())
+
+def holm(pvals):
+    order = np.argsort(pvals); m = len(pvals)
+    adj = np.empty(m); run = 0.0
+    for rank, idx in enumerate(order):
+        run = max(run, (m - rank) * pvals[idx]); adj[idx] = min(1.0, run)
+    return adj
+
+def bootstrap_ci(x, stat=np.mean, n=10000, alpha=0.05, seed=0): ...
+def cliffs_delta(x, y): ...
+```
+
+---
+
+# 第四部分 实验执行手册与 AI Agent 工序
+
+## 4.1 配置 Schema（experiments/configs/exp2_sim_benchmark.yaml）
+
+```yaml
+data: {root: data/sim, families: [S, M, L], densities: [low, mid, high],
+       seeds: [0..11], split: test_only_unseen_seeds}
+sensor: {preset: riegl_vz400, dtheta_deg: 0.04, r: [0.5, 10, 60], sigma_r: 0.005}
+budget: {stations_max: 8, length_max_m: 400, time_max_s: 3600}
+methods: [B0_random, B1_patent_nbv, B2_geom_only, B3_frontier, B4_occ,
+          B5_occ_rng, B6_reg, B7_greedy_multiview, B8_setcover_shortest,
+          B9_nbp_surrogate, B10_full]
+metrics: [awc, dens_ok, crit_recall, fvr, occ_recov, reg_succ, t_err, r_err,
+          path_len, n_stations, ig_per_m, redund, safety_viol]
+stats: {paired: true, permutation_n: 10000, holm: true, bootstrap_n: 10000}
+outputs: results/exp2/{method}/{scene}/{seed}/run.json    # 禁止覆盖
+```
+run.json 固定字段：配置哈希、git commit、种子、逐轮闭环记录、`status: ok/failed/timeout`（缺失结果显式登记，统计按预登记规则计入，禁止静默删除）。
+
+## 4.2 基线实现映射（避免稻草人）
+- B1 = 母专利公式(24)(25)原样（含固定高斯），但闭环同样用公式(45)真实重扫——保证与 B10 差异只在评分/规划，不在仿真保真度；
+- B3 Frontier = 体素占据边界质心 + A* 最近前沿（TARE/FUEL 思想的确定性简化，论文注明非原实现）；
+- B9 = 公式(42)贪心 + 长程目标偏置（NextBestPath 为学习方法且数据域不匹配，如实标注"受启发的非学习替代"，不冒充复现）。
+
+## 4.3 实验矩阵（正式前 pilot：2 场景×3 种子估方差定 n）
+
+| 实验 | 数据 | 方法×规模 | 主判据 |
+|---|---|---|---|
+| E1 单测 | 合成基元 | pytest 全绿 | Gate 1–3 |
+| E2 仿真基准 | sim 测试子集 | B0–B10×10种子×5起点，闭环≤8轮 | RQ1/2/3/4/6 |
+| E2-S 敏感性 | 固定12场景 | B10 扫 α权重/O_min/ρ_0/λ_len | 消融A1–A15曲线 |
+| E3 holdout | WHU-TLS(申请中)+ETH ASL+Robotic3D | B1/B5/B6/B10×5次随机holdout | RQ3、外部效度 |
+| E4 真实变电站 | 合作方（条件） | B1 vs B10 零调参×2场景 | Gate 5 |
+
+## 4.4 AI Agent 执行工序（PR 粒度 + 验收标准）
+
+| PR | 内容 | 验收 |
+|---|---|---|
+| PR1 | io/station_npz.py + sensors/model.py | Schema往返测试；非法字段拒绝 |
+| PR2 | occlusion/(sampling,raycast) | 3.2三单测全绿；10⁵射线<1 s |
+| PR3 | density/expected.py | 3.3数值断言；平板校准<15% |
+| PR4 | registration/(predictor,baselines) | 退化专项；ICP/FPFH冒烟 |
+| PR5 | evidence+scoring 挂接三新证据 | K_i退出行为回归=母专利实施例5 |
+| PR6 | mapping/traversability.py | 膨胀正确性；A*零碰撞 |
+| PR7 | viewpoints改造+planning三件套 | 玩具例对拍；TSP 10站<10 s |
+| PR8 | simulation三件套 | 108场景生成；Fallback一致性ρ>0.9或声明降级 |
+| PR9 | evaluation+experiments | E1全绿；pilot方差报告 |
+| PR10 | E2全量→E3 | Gate 2/3/5判定报告自动生成 |
+
+**Agent 硬性纪律**：不改动母专利公式实现的数值行为（B1 依赖）；所有新阈值进 yaml；每次运行带配置哈希；"装不上/申请未批/检索不到"如实写 OPEN_ISSUES.md，禁止占位数据冒充。
+
+## 4.5 数据获取行动清单（与开发并行）
+1.【第1周】下载 ETH ASL registration datasets（免申请）→转NPZ→PR4 冒烟；
+2.【第1周】提交 WHU-TLS Data Request（3s.whu.edu.cn，非商用研究）；
+3.【第1–2周】安装 HELIOS++（Release 二进制优先）；失败即启用 FallbackSimulator，Gate 0 记录降级；
+4.【第2周】核实 EDF/ENS challenge 与 Industrial3D 发布状态→OPEN_ISSUES.md；
+5.【并行】向合作方发 1.4 字段级需求单，强调"要逐站工程原始文件（e57/ptx），不要合并 las"。
+
+---
+
+## 附：诚实性声明
+- Open3D 0.19.0 / OR-Tools 9.15 / embreex 4.4.0 / ifcopenshell 0.8.5 / python-tsp 0.5.0 / trimesh 4.12.2 / laspy 2.7.0 为本次 PyPI 实测【事实】；`teaserpp-python` 无 PyPI 包、PyPI 上 `pyhelios`/`helios` 均非 HELIOS++【事实】。
+- HELIOS++ 主仓 3dgeo-heidelberg/helios 与 conda 渠道、survey/scanner XML 字段随版本变化【待核实】（本次 GitHub API 限流仅核实前身 GIScience/helios，GPL-3.0）；已内置 Fallback 降级路径。
+- 110 kV 安全距离 1.5 m、ρ_0=400 点/m²、O_min=0.30、组件尺寸表均为可配置初值【推断/待核实】，pilot 与合作方规程标定后方可写入论文。
+- WHU-TLS/EDF/Industrial3D 获批与否是 E3 外部条件；未获批时 E3 以 ETH ASL + Robotic 3D Scan Repository 执行并如实缩小外部效度主张。

@@ -1,0 +1,45 @@
+# E2 仿真基准配置 Schema(4.1 节)。pilot 由 scripts/run_e2_pilot.py 执行,
+# 全量矩阵按此扩展。所有阈值集中于此, 禁止硬编码。
+data:
+  root: data/sim
+  families: [S, M, L]
+  densities: [low, mid, high]
+  seeds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+  split: test_only_unseen_seeds        # train/test 按 seed 整场景划分
+sensor:
+  preset: fallback_spherical           # HELIOS++ 未部署, Gate 0 降级(见 OPEN_ISSUES)
+  dtheta_deg: 0.4                      # 仿真角步长; 敏感性实验 {0.2, 0.4, 0.8}
+  r: [0.5, 10, 60]
+  sigma_r: 0.005
+budget:
+  stations_max: 6
+  length_max_m: 400
+  time_max_s: 3600
+gap_weights:                            # 公式(40)后扩展权重表初值
+  alpha_occ: 0.18
+  alpha_rng: 0.15
+  alpha_regsup: 0.10
+density:
+  rho0: 50.0                            # pilot 标定(0.4°仿真; 真实TLS档位应回300–400, 见 OPEN_ISSUES #18)
+  lambda_e: 1.0
+registration:
+  o_min: 0.30
+  tau_gap: 0.55
+  tau_cov: 0.5
+  gamma: 1.0
+traversability:
+  res: 0.25
+  s_max_deg: 10
+  h_robot: 1.8
+  r_robot: 0.6
+  d_safe_110kv: 1.5                     # 【待核实】GB 26860 类规范
+objective:                              # 公式(44)
+  lambda_reg: 0.3
+  lambda_len: 0.4
+  lambda_sta: 0.2
+  v_move: 0.5
+  t_scan: 180
+methods: [B0_random, B1_patent, B5_occ_rng, B10_full]   # pilot 子集; 全量补 B2–B9
+metrics: [awc_gap_recovery, dens_ok, crit_recall, path_len_m, n_stations, ig_per_m]
+stats: {paired: true, permutation_n: 10000, holm: true, bootstrap_n: 10000}
+outputs: results/exp2/{method}/{scene}/{seed}/run.json   # 禁止覆盖
