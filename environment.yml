@@ -26,4 +26,6 @@ dependencies:
       - laspy
       - plyfile
       - pynvml
-
+      - plotly>=5.20
+      - gradio>=5.50,<6
+      - trimesh

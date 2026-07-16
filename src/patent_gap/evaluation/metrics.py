@@ -2,7 +2,15 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from sklearn.metrics import average_precision_score, brier_score_loss, f1_score, precision_recall_curve, roc_auc_score
+from sklearn.metrics import (
+    average_precision_score,
+    balanced_accuracy_score,
+    brier_score_loss,
+    f1_score,
+    matthews_corrcoef,
+    precision_recall_curve,
+    roc_auc_score,
+)
 
 
 def ndcg_at_k(relevance: np.ndarray, scores: np.ndarray, k: int) -> float:
@@ -36,18 +44,64 @@ def expected_calibration_error(labels: np.ndarray, scores: np.ndarray, bins: int
     return float(ece)
 
 
-def patch_detection_metrics(patch_scores: pd.DataFrame, score_col: str = "G_gap") -> dict[str, float]:
+def optimal_f1_threshold(labels: np.ndarray, scores: np.ndarray) -> tuple[float, float]:
+    """Return the test-set oracle threshold for diagnostics only."""
+    labels = np.asarray(labels, dtype=int)
+    scores = np.asarray(scores, dtype=float)
+    if labels.size == 0 or scores.size != labels.size:
+        raise ValueError("labels and scores must be non-empty arrays of equal length")
+    precision, recall, thresholds = precision_recall_curve(labels, scores)
+    f1s = np.where((precision + recall) > 0, 2 * precision * recall / (precision + recall + 1e-12), 0.0)
+    best_idx = int(np.argmax(f1s))
+    best_thresh = float(thresholds[best_idx]) if best_idx < len(thresholds) else 0.5
+    return best_thresh, float(f1s[best_idx])
+
+
+def patch_detection_metrics(
+    patch_scores: pd.DataFrame,
+    score_col: str = "G_gap",
+    decision_threshold: float = 0.5,
+    include_oracle: bool = True,
+) -> dict[str, float]:
+    if patch_scores.empty:
+        raise ValueError("patch_scores cannot be empty")
+    required = {"gt_missing", score_col}
+    missing = required.difference(patch_scores.columns)
+    if missing:
+        raise ValueError(f"patch_scores is missing columns: {', '.join(sorted(missing))}")
+    if not 0.0 <= decision_threshold <= 1.0:
+        raise ValueError("decision_threshold must be in [0, 1]")
+
     labels = patch_scores["gt_missing"].astype(int).to_numpy()
-    scores = patch_scores[score_col].fillna(0).to_numpy()
-    pred = (scores >= 0.5).astype(int)
+    scores = pd.to_numeric(patch_scores[score_col], errors="coerce").fillna(0).clip(0, 1).to_numpy()
+    pred = (scores >= decision_threshold).astype(int)
+    prevalence = float(labels.mean())
     out: dict[str, float] = {}
+    out["Prevalence"] = prevalence
     if len(np.unique(labels)) > 1:
         out["AUROC"] = float(roc_auc_score(labels, scores))
         out["AUPRC"] = float(average_precision_score(labels, scores))
+        out["AUPRC_lift"] = out["AUPRC"] / prevalence if prevalence > 0 else float("nan")
+        out["BalancedAccuracy"] = float(balanced_accuracy_score(labels, pred))
+        out["MCC"] = float(matthews_corrcoef(labels, pred))
+        precision, _, _ = precision_recall_curve(labels, scores)
+        out["PR_points"] = float(len(precision))
+        if include_oracle:
+            oracle_threshold, oracle_f1 = optimal_f1_threshold(labels, scores)
+            out["F1_oracle"] = oracle_f1
+            out["F1_oracle_threshold"] = oracle_threshold
     else:
-        out["AUROC"] = 0.0
-        out["AUPRC"] = 0.0
+        out["AUROC"] = float("nan")
+        out["AUPRC"] = float("nan")
+        out["AUPRC_lift"] = float("nan")
+        out["BalancedAccuracy"] = float("nan")
+        out["MCC"] = float("nan")
+        if include_oracle:
+            out["F1_oracle"] = float("nan")
+            out["F1_oracle_threshold"] = float("nan")
+        out["PR_points"] = 0.0
     out["F1"] = float(f1_score(labels, pred, zero_division=0))
+    out["F1_threshold"] = float(decision_threshold)
     intersection = float(((labels == 1) & (pred == 1)).sum())
     union = float(((labels == 1) | (pred == 1)).sum())
     out["IoU"] = intersection / union if union else 0.0
@@ -55,8 +109,6 @@ def patch_detection_metrics(patch_scores: pd.DataFrame, score_col: str = "G_gap"
     out["Recall@Top-10%"] = recall_at_top_fraction(labels, scores, 0.10)
     out["Brier"] = float(brier_score_loss(labels, np.clip(scores, 0, 1)))
     out["ECE"] = expected_calibration_error(labels, scores)
-    precision, recall, _ = precision_recall_curve(labels, scores)
-    out["PR_points"] = float(len(precision) + len(recall))
     return out
 
 
@@ -71,4 +123,3 @@ def component_metrics(component_ranking: pd.DataFrame, patch_scores: pd.DataFram
         "Recall@5": float(relevance[np.argsort(scores)[::-1][:5]].sum() / max(1, relevance.sum())),
         "Recall@10": float(relevance[np.argsort(scores)[::-1][:10]].sum() / max(1, relevance.sum())),
     }
-

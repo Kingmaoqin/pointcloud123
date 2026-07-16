@@ -1,6 +1,126 @@
 # STATUS
 
-## 2026-06-14
+## 2026-06-20 (v4 - Full audit, controlled evaluation, and local UI)
+
+### Correctness and robustness fixes
+- Preserved every patch during evidence joins; missing evidence no longer silently drops rows.
+- Primary F1 now uses the declared threshold (`0.5`). Test-set threshold optimization is
+  reported separately as `F1_oracle` and is not presented as the primary metric.
+- Single-class AUROC/AUPRC are `NaN`, and the real CRAS pipeline skips supervised
+  baselines because patch-level binary ground truth does not exist.
+- Candidate azimuth/elevation generation now produces distinct viewpoints and applies
+  range, field-of-view, and camera-side checks.
+- The real closed loop now uses the 9,438-patch CRAS scene rather than the six-patch
+  regression cube. Observation indicators are initialized for all patches before updates.
+- Added cache fingerprints, mesh/input validation, duplicate-ID checks, finite-value
+  checks, and safe model-upload limits.
+
+### Controlled quantitative evaluation
+- Scene: 9,438 patches from 256 IFC elements.
+- Predeclared withheld zone: 2,298 positive patches (24.35% prevalence).
+- AUROC: 0.9958; AUPRC: 0.9866; AUPRC lift over prevalence: 4.052.
+- Fixed-threshold F1: 0.8939; balanced accuracy: 0.9059; MCC: 0.8710.
+- Oracle F1 is reported only as a diagnostic: 0.9616 at threshold 0.3708.
+- Ten supplemental scans reduce weighted target gap area from 450.51 to 175.92;
+  final net recovery is 60.95% and every controlled step is non-increasing.
+
+### Real CRAS diagnostic
+- 9,438 patches, 256 elements, 810 ranked candidate viewpoints.
+- Mean `D_obs`: 0.7066; mean `D_geo`: 0.7263; mean `G_gap`: 0.4851.
+- 6,822 patches are above the 0.55 diagnostic threshold; top view value is 73.197.
+- The available 20k association sample has `classification=0` for every point, so
+  `D_sem` is unavailable. Cached scanner origins are also unavailable, so initial
+  `D_ang` is unknown rather than fabricated.
+- Real output is explicitly marked `diagnostic_only_no_patch_level_ground_truth`.
+  Supplemental observations can reveal previously unknown angular deficiency, so the
+  real diagnostic trajectory is not guaranteed to be monotonic.
+
+### Local workstation
+- Launch: `python scripts/run_web_app.py --host 127.0.0.1 --port 7862`.
+- Provides responsive desktop/mobile UI, interactive 3D gap maps, candidate views,
+  model import, patch-score import, single/multi-step rescan, and recovery plots.
+- Verified with backend API calls and desktop/mobile browser screenshots.
+- Regression suite: 22 tests passed; selective Ruff checks passed.
+
+## 2026-06-14 (v3 — Synthetic Scan Pipeline — All Limitations Fixed)
+
+### Root-cause analysis: why CRAS real-data metrics were broken
+- **gt_missing all False**: CRAS chunk summaries had per-element counts but the pipeline never
+  translated them into binary gt_missing labels — 205/256 elements had 0 matched points.
+- **D_sem valid only 0.5%**: The 20k sample points all had classification=0 (unclassified), so
+  semantic comparison was impossible for 99.5% of patches.
+- **AUROC/AUPRC/F1 = 0**: Consequence of gt_missing=False for every patch.
+
+### Fix: IFC Synthetic Scan (no new dataset needed)
+- **scripts/gen_synthetic_scan.py** — Open3D RaycastingScene shoots rays from 9 interior scanner
+  positions (3×3 grid, Y=0..12 m); leaves Y=14-20 m zone unscanned intentionally.
+  → 359,448 hit points across 192/256 IFC elements; 64 elements with 0 hits = gt_missing=True
+- **evidence/__init__.py** — Added `compute_evidence_from_synthetic()`: uses per-element stats
+  from synthetic scan; stores raw coverage/density/frontality (not D_*) so closed loop can
+  recompute D_obs/D_ang/D_geo each iteration.
+- **semantics/__init__.py** — Added `compute_semantic_scores_synthetic()`: reads per-element
+  semantic_counts (JSON) from element_stats.csv; classification codes from IFC class + 12% noise.
+- **simulation/closed_loop.py** — Added `run_closed_loop_from_scene()`: caller-supplied scene
+  dict (no synthetic_scene() call), otherwise identical logic to run_closed_loop().
+- **scripts/run_synthetic_pipeline.py** — End-to-end synthetic pipeline (9 steps, ~5 min).
+
+### Synthetic scan results (outputs/reports/synthetic_summary.json):
+- **gt_missing**: 2,900/9,148 patches True (31.7%) / 6,248 patches False (68.3%)
+- **D_sem valid**: 6,248/9,148 patches (68.3%) ← was 46/9148 (0.5%)
+- **D_sem mean**: 0.185 (meaningful, from 12% noise injection)
+- **AUROC=0.900 / AUPRC=0.824 / F1=0.901** ← was 0/0/0 on CRAS
+- **G_gap mean=0.536**, max=0.876
+- **Top-1 view value=155.8**
+- **Closed-loop 10-step final recovery=82.7%** (monotonic, realistic convergence)
+
+### Ablation highlights (synthetic data):
+- Geometry-only (D_geo): AUROC=0.765  ← weakest single indicator
+- Equal-weight (all 6): AUROC=0.898   ← combination is powerful
+- Full G_gap (tuned):   AUROC=0.900   ← tuned weights marginally best
+- no_material:          AUROC=1.000   ← material scores add noise (conflict=0%)
+- no_D_obs:             AUROC=0.885   ← D_obs is load-bearing
+
+## 2026-06-14 (v2 — Full Real-Data Pipeline Complete)
+
+### Core fixes applied (by Claude Code review):
+- **patches/__init__.py**: Implemented real region-growing patch segmentation on IFC mesh
+  → 9,148 patches from 256 IFC elements, normal_threshold=20°
+- **registration/__init__.py**: ICP refinement using known coarse translation (+0.685, 0, -0.667m)
+- **evidence/__init__.py**: Vectorised evidence computation (O(elements) not O(patches))
+  → Aggregates element-level point counts from 585 full-dataset chunks
+- **semantics/__init__.py**: CRAS classification label → IFC class JS-divergence mapping
+- **materials/__init__.py**: IFC material extraction + RGB-based visual category comparison
+- **viewpoints/ranking.py**: Fixed azimuth/elevation to use Rodrigues proper spherical coords;
+  vectorised score_candidates (batch over patches, iterate candidates); max_target_patches=30
+- **simulation/closed_loop.py**: Exponential gap-scaled coverage recovery; proper gt_missing tracking
+- **evaluation/metrics.py**: Optimal F1 threshold from PR curve (not hardcoded 0.5)
+- **visualization/interactive.py**: 8-tab Plotly HTML report for collaborator demos
+
+### Real CRAS data results (outputs/reports/real_data_summary.json):
+- **9,148 patches**, 256 elements
+- **G_gap mean=0.627**, max=0.876 (74.7% patches above 0.55 threshold)
+- D_obs mean=0.849, D_geo mean=0.747, material missing rate=10.8%
+- Top 3 priority components: IfcSlab (G_component=0.903)
+- 810 candidate views generated, top-1 value=159.59
+- Closed-loop: 10 steps, final recovery rate=90.3%
+- pytest: 12/12 passed
+
+### Outputs generated:
+- `outputs/reports/interactive_gap_report.html` (17 MB, 8-tab Plotly interactive)
+- `outputs/tables/patch_scores_real.csv` (9,148 patches with all gap scores)
+- `outputs/tables/component_ranking_real.csv`
+- `outputs/tables/candidate_view_ranking_real.csv`
+- `outputs/tables/closed_loop_results_real.csv`
+- `outputs/figures/*_real.png` (10 static matplotlib figures)
+
+### Known limits (real data):
+- D_sem: only 46/9148 patches have observed semantic labels (sample only covers 2 furniture elements)
+  → Requires full-dataset per-element semantic aggregation for meaningful D_sem
+- Material conflict rate=0%: CRAS RGB colorisation does not have sufficient contrast to trigger conflicts
+- Full dataset 2.2% match rate = valid (scanning only covers lab area, IFC covers whole building)
+- IFC-point cloud translation residual: ~0.02m after coarse correction (further ICP would improve)
+
+## 2026-06-14 (v1 — original Codex implementation)
 
 - Created project skeleton under `/home/xqin5/patent_gap_nbv`.
 - Read patent PDF and extracted the algorithmic requirements into implementation modules.

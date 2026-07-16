@@ -1,0 +1,32 @@
+参数名,当前值,默认值,来源文件,调用函数,synthetic/raycast/real/web映射
+normal_threshold_deg,20.0,20.0,patches.__init__.py:97,build_patches,synthetic/real/web IFC；web IFC覆盖min_patch_area但不覆盖该值
+min_patch_area,0.005,0.005,patches.__init__.py:98,build_patches,默认；web导入IFC用0.01
+reference_density_pts_m2,500.0,500.0,"evidence.__init__.py:37,162,258",evidence functions,synthetic/raycast/real均可用默认
+frontality_gamma,2.0,2.0,"evidence.__init__.py:38,260",compute_evidence*,raycast/real证据
+min_points_for_observed,1,1,evidence.__init__.py:39,compute_evidence_from_synthetic,raycast路径
+degradation_fraction,0.15,0.15,evidence.__init__.py:163,compute_controlled_withheld_evidence,synthetic controlled
+missing_leakage_fraction,0.20,0.20,evidence.__init__.py:164,compute_controlled_withheld_evidence,synthetic controlled
+semantic_smoothing,0.02,0.02,"semantics.__init__.py:135,194",compute_semantic_scores*,semantic路径
+ignore_unknown_labels,True,True,"semantics.__init__.py:136,195",compute_semantic_scores*,semantic路径
+semantic_noise,0.12,0.12,semantics.__init__.py:266,compute_controlled_semantic_scores,synthetic controlled
+semantic_conflict_fraction,0.05,0.05,semantics.__init__.py:267,compute_controlled_semantic_scores,synthetic controlled
+material_conflict_threshold,0.60,0.60,materials.__init__.py:71,build_material_table,real/synthetic/web proxy
+min_rgb_points,3,3,materials.__init__.py:72,build_material_table,real RGB证据
+alpha_sem,0.16,0.16,gap/scoring.py:10-17; configs/gap/default.yaml,compute_patch_scores,所有G_gap入口
+alpha_mat_missing,0.14,0.14,gap/scoring.py:10-17; configs/gap/default.yaml,compute_patch_scores,所有G_gap入口
+alpha_mat_conflict,0.1,0.10,gap/scoring.py:10-17; configs/gap/default.yaml,compute_patch_scores,所有G_gap入口
+alpha_obs,0.22,0.22,gap/scoring.py:10-17; configs/gap/default.yaml,compute_patch_scores,所有G_gap入口
+alpha_ang,0.16,0.16,gap/scoring.py:10-17; configs/gap/default.yaml,compute_patch_scores,所有G_gap入口
+alpha_geo,0.22,0.22,gap/scoring.py:10-17; configs/gap/default.yaml,compute_patch_scores,所有G_gap入口
+lambda_importance,0.3,0.30,gap/scoring.py:225,compute_patch_scores,G_task
+high_gap_threshold,0.55,0.55,gap/scoring.py:285,rank_components,组件排序和高缺口统计
+distances,"[1.5, 2.5, 4.0]","[1.5,2.5,4.0]",viewpoints/ranking.py:61,generate_candidates,默认/配置/web
+azimuth_offsets_deg,"[-45, 0, 45]","[-45,0,45]",viewpoints/ranking.py:62,generate_candidates,默认/配置/web
+elevation_offsets_deg,"[-20, 0, 20]","[-20,0,20]",viewpoints/ranking.py:63,generate_candidates,默认/配置/web
+gap_threshold,0.55默认；synthetic正式脚本0.70；web滑块0.55,0.55,viewpoints/ranking.py:64; run_synthetic_pipeline.py:222; webapp.py:755-760,generate_candidates,入口不同
+max_target_patches,30,30,viewpoints/ranking.py:65; webapp.py:463,generate_candidates,synthetic/real/web
+field_of_view_deg,90默认；web 100,90.0,viewpoints/ranking.py:144; webapp.py:464,score_candidates,脚本默认/web覆盖
+max_range_m,20默认；web 30,20.0,viewpoints/ranking.py:145; webapp.py:465,score_candidates,脚本默认/web覆盖
+eta,0.1,0.10,viewpoints/ranking.py:141; configs/view/default.yaml,score_candidates,冗余惩罚
+recovery_per_view,0.75脚本；web 0.55默认,0.75/0.55,closed_loop.py:164; webapp.py:763-768,closed_loop/run_scan_steps,入口不同
+association_distance,0.05,0.05,configs/experiment/cras_full.yaml,association pipeline,real CRAS关联

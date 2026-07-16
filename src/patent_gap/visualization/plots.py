@@ -66,19 +66,28 @@ def plot_baseline_results(results: pd.DataFrame, out_path: str | Path) -> None:
 
 
 def plot_candidate_views(ranked_views: pd.DataFrame, out_path: str | Path) -> None:
+    import ast as _ast
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     fig, ax = plt.subplots(figsize=(6, 5))
     if ranked_views.empty:
         ax.text(0.5, 0.5, "no candidates", ha="center", va="center")
     else:
-        xy = np.array([list(v[:2]) for v in ranked_views["position"]], dtype=float)
-        sc = ax.scatter(xy[:, 0], xy[:, 1], c=ranked_views["value"], cmap="viridis", s=35)
-        ax.scatter([0], [0], marker="s", c="black", s=80, label="cube center")
-        ax.legend(loc="best")
+        def _xy(v: object) -> tuple[float, float]:
+            if isinstance(v, str):
+                try:
+                    v = _ast.literal_eval(v)
+                except Exception:
+                    return (0.0, 0.0)
+            if hasattr(v, "__len__") and len(v) >= 2:
+                return (float(v[0]), float(v[1]))
+            return (0.0, 0.0)
+        xy = np.array([_xy(v) for v in ranked_views["position"]], dtype=float)
+        sc = ax.scatter(xy[:, 0], xy[:, 1], c=ranked_views["value"].values.astype(float),
+                        cmap="viridis", s=35)
         fig.colorbar(sc, ax=ax, label="view value")
-    ax.set_xlabel("x")
-    ax.set_ylabel("y")
+    ax.set_xlabel("x (m)")
+    ax.set_ylabel("y (m)")
     ax.set_title("Candidate View Positions")
     ax.axis("equal")
     fig.tight_layout()
