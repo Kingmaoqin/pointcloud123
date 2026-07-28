@@ -1,0 +1,296 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="550.08pt" height="341.496pt" viewBox="0 0 550.08 341.496" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-07-28T17:15:54.720788</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.9.2, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 341.496 
+L 550.08 341.496 
+L 550.08 -0 
+L 0 -0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 121.032 166.277688 
+Q 121.032 134.712924 121.032 105.384228 
+" clip-path="url(#pf93df0f048)" style="fill: none; stroke: #000000; stroke-width: 2; stroke-linecap: round"/>
+    <path d="M 117.832 111.784228 
+L 121.032 105.384228 
+L 124.232 111.784228 
+z
+" clip-path="url(#pf93df0f048)" style="stroke: #000000; stroke-width: 2; stroke-linecap: round"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 162.5472 146.106768 
+Q 162.5472 114.542004 162.5472 85.213308 
+" clip-path="url(#pf93df0f048)" style="fill: none; stroke: #000000; stroke-width: 2; stroke-linecap: round"/>
+    <path d="M 159.3472 91.613308 
+L 162.5472 85.213308 
+L 165.7472 91.613308 
+z
+" clip-path="url(#pf93df0f048)" style="stroke: #000000; stroke-width: 2; stroke-linecap: round"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 204.0624 166.277688 
+Q 204.0624 134.712924 204.0624 105.384228 
+" clip-path="url(#pf93df0f048)" style="fill: none; stroke: #000000; stroke-width: 2; stroke-linecap: round"/>
+    <path d="M 200.8624 111.784228 
+L 204.0624 105.384228 
+L 207.2624 111.784228 
+z
+" clip-path="url(#pf93df0f048)" style="stroke: #000000; stroke-width: 2; stroke-linecap: round"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 245.5776 146.106768 
+Q 289.7712 127.625844 331.901848 110.007607 
+" clip-path="url(#pf93df0f048)" style="fill: none; stroke: #000000; stroke-width: 2; stroke-linecap: round"/>
+    <path d="M 324.762758 109.524506 
+L 331.901848 110.007607 
+L 327.231913 115.429019 
+z
+" clip-path="url(#pf93df0f048)" style="stroke: #000000; stroke-width: 2; stroke-linecap: round"/>
+   </g>
+   <g id="patch_6">
+    <path d="M 47.376 319.57668 
+L 173.2608 319.57668 
+L 173.2608 292.754808 
+L 47.376 292.754808 
+z
+" clip-path="url(#pf93df0f048)" style="fill: #d1d1d1; stroke: #000000; stroke-width: 2; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_7">
+    <path d="M 213.4368 319.57668 
+L 339.3216 319.57668 
+L 339.3216 292.754808 
+L 213.4368 292.754808 
+z
+" clip-path="url(#pf93df0f048)" style="fill: #d1d1d1; stroke: #000000; stroke-width: 2; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_8">
+    <path d="M 379.4976 319.57668 
+L 505.3824 319.57668 
+L 505.3824 292.754808 
+L 379.4976 292.754808 
+z
+" clip-path="url(#pf93df0f048)" style="fill: #d1d1d1; stroke: #000000; stroke-width: 2; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_9">
+    <path d="M 177.54624 306.165744 
+Q 193.3488 306.165744 207.362506 306.165744 
+" clip-path="url(#pf93df0f048)" style="fill: none; stroke: #000000; stroke-width: 1.6; stroke-linecap: round"/>
+    <path d="M 200.962506 302.965744 
+L 207.362506 306.165744 
+L 200.962506 309.365744 
+z
+" clip-path="url(#pf93df0f048)" style="stroke: #000000; stroke-width: 1.6; stroke-linecap: round"/>
+   </g>
+   <g id="patch_10">
+    <path d="M 343.60704 306.165744 
+Q 359.4096 306.165744 373.423306 306.165744 
+" clip-path="url(#pf93df0f048)" style="fill: none; stroke: #000000; stroke-width: 1.6; stroke-linecap: round"/>
+    <path d="M 367.023306 302.965744 
+L 373.423306 306.165744 
+L 367.023306 309.365744 
+z
+" clip-path="url(#pf93df0f048)" style="stroke: #000000; stroke-width: 1.6; stroke-linecap: round"/>
+   </g>
+   <g id="patch_11">
+    <path d="M 79.5168 190.37376 
+L 162.5472 190.37376 
+L 121.032 129.861 
+z
+" clip-path="url(#pf93df0f048)" style="fill: url(#h65b119fefd); stroke: #000000; stroke-width: 2; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_12">
+    <path d="M 162.5472 190.37376 
+L 121.032 129.861 
+L 204.0624 129.861 
+z
+" clip-path="url(#pf93df0f048)" style="fill: url(#h65b119fefd); stroke: #000000; stroke-width: 2; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_13">
+    <path d="M 162.5472 190.37376 
+L 204.0624 129.861 
+L 245.5776 190.37376 
+z
+" clip-path="url(#pf93df0f048)" style="fill: url(#h65b119fefd); stroke: #000000; stroke-width: 2; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_14">
+    <path d="M 245.5776 190.37376 
+L 204.0624 129.861 
+L 287.0928 129.861 
+z
+" clip-path="url(#pf93df0f048)" style="fill: #ffffff; stroke: #000000; stroke-width: 2; stroke-linejoin: miter"/>
+   </g>
+   <g id="line2d_1">
+    <path d="M 213.4368 285.558696 
+L 505.3824 285.558696 
+" clip-path="url(#pf93df0f048)" style="fill: none; stroke: #000000; stroke-width: 1.3; stroke-linecap: square"/>
+   </g>
+   <g id="line2d_2">
+    <path d="M 213.4368 290.13804 
+L 213.4368 285.558696 
+" clip-path="url(#pf93df0f048)" style="fill: none; stroke: #000000; stroke-width: 1.3; stroke-linecap: square"/>
+   </g>
+   <g id="line2d_3">
+    <path d="M 505.3824 290.13804 
+L 505.3824 285.558696 
+" clip-path="url(#pf93df0f048)" style="fill: none; stroke: #000000; stroke-width: 1.3; stroke-linecap: square"/>
+   </g>
+   <g id="text_1">
+    <text style="font: 700 19px 'Noto Sans CJK JP'; text-anchor: start" x="31.3056" y="32.363963" transform="rotate(-0 31.3056 32.363963)">图4  共享边和双法向约束形成表面分块</text>
+   </g>
+   <g id="line2d_4">
+    <path d="M 162.5472 190.37376 
+L 121.032 129.861 
+" clip-path="url(#pf93df0f048)" style="fill: none; stroke: #000000; stroke-width: 5; stroke-linecap: round"/>
+   </g>
+   <g id="line2d_5">
+    <path d="M 162.5472 190.37376 
+L 204.0624 129.861 
+" clip-path="url(#pf93df0f048)" style="fill: none; stroke: #000000; stroke-width: 5; stroke-linecap: round"/>
+   </g>
+   <g id="line2d_6">
+    <path d="M 245.5776 190.37376 
+L 204.0624 129.861 
+" clip-path="url(#pf93df0f048)" style="fill: none; stroke: #000000; stroke-width: 5; stroke-linecap: round"/>
+   </g>
+   <g id="text_2">
+    <text style="font: 12.5px 'Noto Sans CJK JP'; text-anchor: middle" x="159.8688" y="61.17084" transform="rotate(-0 159.8688 61.17084)">T1～T3 法向一致</text>
+   </g>
+   <g id="text_3">
+    <text style="font: 12.5px 'Noto Sans CJK JP'" transform="translate(419.093119 59.452336)">T4 法向偏转过大</text>
+    <text style="font: 12.5px 'Noto Sans CJK JP'" transform="translate(433.9564 74.25468)">（不并入）</text>
+   </g>
+   <g id="patch_15">
+    <path d="M 287.705794 211.897975 
+Q 257.036303 186.644505 227.575147 162.385987 
+" style="fill: none; stroke: #000000; stroke-width: 1.4; stroke-linecap: round"/>
+    <path d="M 229.755073 167.289855 
+L 227.575147 162.385987 
+L 232.806197 163.584367 
+z
+" style="stroke: #000000; stroke-width: 1.4; stroke-linecap: round"/>
+   </g>
+   <g id="text_4">
+    <text style="font: 12px 'Noto Sans CJK JP'; text-anchor: middle" x="299.1456" y="224.71884" transform="rotate(-0 299.1456 224.71884)">共享边（加粗）</text>
+   </g>
+   <g id="text_5">
+    <text style="font: 13px 'Noto Sans CJK JP'; text-anchor: middle" x="275.04" y="241.487368" transform="rotate(-0 275.04 241.487368)">满足共享边邻接、且同时满足两项法向约束的三角面并入同一表面分块</text>
+   </g>
+   <g id="text_6">
+    <text style="font: 11.5px 'Noto Sans CJK JP'; text-anchor: middle" x="110.3184" y="309.425275" transform="rotate(-0 110.3184 309.425275)">前提：共享边邻接</text>
+   </g>
+   <g id="text_7">
+    <text style="font: 11.5px 'Noto Sans CJK JP'; text-anchor: middle" x="276.3792" y="309.425275" transform="rotate(-0 276.3792 309.425275)">约束①：当前法向约束</text>
+   </g>
+   <g id="text_8">
+    <text style="font: 11.5px 'Noto Sans CJK JP'; text-anchor: middle" x="442.44" y="309.425275" transform="rotate(-0 442.44 309.425275)">约束②：种子法向约束</text>
+   </g>
+   <g id="text_9">
+    <text style="font: 11.5px 'Noto Sans CJK JP'; text-anchor: middle" x="359.4096" y="278.351155" transform="rotate(-0 359.4096 278.351155)">两项法向约束</text>
+   </g>
+   <g id="text_10">
+    <text style="font: 11.5px 'Noto Sans CJK JP'; text-anchor: middle" x="121.032" y="182.621059" transform="rotate(-0 121.032 182.621059)">T1（种子）</text>
+   </g>
+   <g id="text_11">
+    <text style="font: 11.5px 'Noto Sans CJK JP'; text-anchor: middle" x="162.5472" y="162.450139" transform="rotate(-0 162.5472 162.450139)">T2</text>
+   </g>
+   <g id="text_12">
+    <text style="font: 11.5px 'Noto Sans CJK JP'; text-anchor: middle" x="204.0624" y="182.621059" transform="rotate(-0 204.0624 182.621059)">T3</text>
+   </g>
+   <g id="text_13">
+    <text style="font: 11.5px 'Noto Sans CJK JP'; text-anchor: middle" x="245.5776" y="162.450139" transform="rotate(-0 245.5776 162.450139)">T4</text>
+   </g>
+   <g id="PathCollection_1">
+    <defs>
+     <path id="mbaf89d10da" d="M 0 2 
+C 0.530406 2 1.03916 1.789267 1.414214 1.414214 
+C 1.789267 1.03916 2 0.530406 2 0 
+C 2 -0.530406 1.789267 -1.03916 1.414214 -1.414214 
+C 1.03916 -1.789267 0.530406 -2 0 -2 
+C -0.530406 -2 -1.03916 -1.789267 -1.414214 -1.414214 
+C -1.789267 -1.03916 -2 -0.530406 -2 0 
+C -2 0.530406 -1.789267 1.03916 -1.414214 1.414214 
+C -1.03916 1.789267 -0.530406 2 0 2 
+z
+" style="stroke: #000000"/>
+    </defs>
+    <g clip-path="url(#pf93df0f048)">
+     <use xlink:href="#mbaf89d10da" x="121.032" y="166.277688" style="stroke: #000000"/>
+    </g>
+   </g>
+   <g id="PathCollection_2">
+    <g clip-path="url(#pf93df0f048)">
+     <use xlink:href="#mbaf89d10da" x="162.5472" y="146.106768" style="stroke: #000000"/>
+    </g>
+   </g>
+   <g id="PathCollection_3">
+    <g clip-path="url(#pf93df0f048)">
+     <use xlink:href="#mbaf89d10da" x="204.0624" y="166.277688" style="stroke: #000000"/>
+    </g>
+   </g>
+   <g id="PathCollection_4">
+    <g clip-path="url(#pf93df0f048)">
+     <use xlink:href="#mbaf89d10da" x="245.5776" y="146.106768" style="stroke: #000000"/>
+    </g>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="pf93df0f048">
+   <rect x="7.2" y="7.2" width="535.68" height="327.096"/>
+  </clipPath>
+ </defs>
+ <defs>
+  <pattern id="h65b119fefd" patternUnits="userSpaceOnUse" x="0" y="0" width="72" height="72">
+   <rect x="0" y="0" width="73" height="73" fill="#d1d1d1"/>
+   <path d="M -36 36 
+L 36 -36 
+M -30 42 
+L 42 -30 
+M -24 48 
+L 48 -24 
+M -18 54 
+L 54 -18 
+M -12 60 
+L 60 -12 
+M -6 66 
+L 66 -6 
+M 0 72 
+L 72 0 
+M 6 78 
+L 78 6 
+M 12 84 
+L 84 12 
+M 18 90 
+L 90 18 
+M 24 96 
+L 96 24 
+M 30 102 
+L 102 30 
+M 36 108 
+L 108 36 
+" style="fill: #000000; stroke: #000000; stroke-width: 1.0; stroke-linecap: butt; stroke-linejoin: miter"/>
+  </pattern>
+ </defs>
+</svg>
