@@ -4,6 +4,8 @@
          在数值上一致 —— 支撑对疑问1（公式(9)中 x、y 的数学形式与计算方式）的答复。
 验证二：到不同表面分块"距离严格相等"的情形确实存在，且在凸棱外侧构成以公共棱
          为脊的三维楔形区域（正体积），并非零测度个例 —— 支撑对疑问2（是否存在 d(x,y1)=d(x,y2)）的答复。
+验证二·补：等距的两个三角面可以互不相邻（两片平行表面正中的点），故并列面
+         必须在全部三角面中搜索 —— 只搜相邻面会漏判。
 验证三：并列时现有实现的取舍随三角面存储顺序改变，底层库未承诺任何规则 ——
          证明必须在技术方案中显式规定唯一归属规则。
 
@@ -116,6 +118,26 @@ def verify_2_tie_region() -> None:
     print("        所划出的两个表面分块的公共边界。\n")
 
 
+def verify_2b_non_adjacent_tie() -> None:
+    """不相邻的等距三角面：两片平行表面正中的点到两者距离相等，却不共享任何顶点。
+
+    该情形说明并列面的搜索范围必须覆盖全部三角面，只搜相邻面会漏判。
+    """
+    print("验证二·补：不相邻表面之间的等距情形")
+    V = np.array([[0, 0, 0], [2, 0, 0], [0, 2, 0], [2, 2, 0],
+                  [0, 0, 1], [2, 0, 1], [0, 2, 1], [2, 2, 1]], dtype=float)
+    F = np.array([[0, 1, 2], [1, 3, 2],      # 下表面（表面分块0）
+                  [4, 6, 5], [5, 6, 7]])     # 上表面（表面分块1），与下表面不共享顶点
+    for p in (np.array([1.0, 1.0, 0.5]), np.array([0.6, 0.7, 0.5])):
+        dd = [closest_distance_point_triangle(p, V[f]) for f in F]
+        tie = [i for i, x in enumerate(dd) if abs(x - min(dd)) < 1e-9]
+        share = set(map(tuple, np.round(V[F[0]], 9))) & set(map(tuple, np.round(V[F[2]], 9)))
+        print(f"    点{np.round(p, 2)}：各面距离={[round(x, 6) for x in dd]}，"
+              f"并列面={tie}，上下表面共享顶点数={len(share)}")
+    print("  结论：等距的两个三角面可以不共享任何顶点，故并列面必须在全部三角面中搜索；")
+    print("        仅搜索相邻面会漏判该情形。\n")
+
+
 def verify_3_tie_instability() -> None:
     print("验证三：并列时现有实现的取舍是否稳定")
     V = np.array([[0, 0, 0], [0, 1, 0], [0, 0, 1], [0, 1, 1],
@@ -160,4 +182,5 @@ if __name__ == "__main__":
     verify_0_degenerate()
     verify_1_closed_form()
     verify_2_tie_region()
+    verify_2b_non_adjacent_tie()
     verify_3_tie_instability()
