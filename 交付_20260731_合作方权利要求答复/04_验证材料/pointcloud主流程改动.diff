@@ -1,0 +1,34 @@
+# 关联主流程的实际改动（git diff）
+# 文件: src/patent_gap/data/pointcloud.py
+# 说明: 确定性规则通过 apply_tie_break 参数接入 associate_points_to_ifc
+
+ad35a2d Implement the tie-break rule exactly, fix two defects it exposed
+
+diff --git a/src/patent_gap/data/pointcloud.py b/src/patent_gap/data/pointcloud.py
+index 02face7..ee6a594 100644
+--- a/src/patent_gap/data/pointcloud.py
++++ b/src/patent_gap/data/pointcloud.py
+@@ -101,6 +101,7 @@ def associate_points_to_ifc(
+     calibration_points: int = 1000,
+     enable_translation_calibration: bool = True,
+     backend: str = "open3d",
++    apply_tie_break: bool = True,
+ ) -> dict[str, Any]:
+     output_dir = Path(output_dir)
+     output_dir.mkdir(parents=True, exist_ok=True)
+@@ -114,7 +115,14 @@ def associate_points_to_ifc(
+     translation = estimate_translation(engine, coords, association_distance, calibration_points, enable_translation_calibration)
+     registered_coords = coords - translation
+     distances, triangle_indices = query_proximity(engine, registered_coords)
+-    method = engine["method"]
++    # 2026-07-31 合作方批注（疑问2）：并列最近距离时，底层库的取舍随三角面存储
++    # 顺序而变。按说明书规定的确定性规则重新裁决，使归属唯一且可复现。
++    if apply_tie_break:
++        from .tie_break import nearest_triangle_deterministic
++
++        distances, triangle_indices = nearest_triangle_deterministic(
++            registered_coords, vertices, faces, distances, triangle_indices)
++    method = engine["method"] + ("+deterministic_tie_break" if apply_tie_break else "")
+     matched = distances <= association_distance
+     element_indices = tri_map[triangle_indices]
+     guids = elements["GlobalId"].to_numpy()

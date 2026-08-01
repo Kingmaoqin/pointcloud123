@@ -148,6 +148,18 @@ def test_bucketing_handles_uniform_triangle_sizes():
     assert len(idx.query(np.array([1.0, 1.0, 0.5]), 0.6)) == 4
 
 
+def test_duplicate_faces_resolved_by_owner():
+    """几何完全重合但分属不同构件的三角面：按构件标识裁决，且与存储顺序无关。"""
+    V = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0]], dtype=float)
+    F = np.array([[0, 1, 2], [0, 1, 2]])          # 两个完全重合的三角面
+    owner = np.array(["GUID_B", "GUID_A"])        # 分属不同构件
+    p = np.array([0.2, 0.2, 0.5])
+    got = {int(resolve_tie(p, V, F, np.array([0, 1]), face_owner=owner)),
+           int(resolve_tie(p, V, F, np.array([1, 0]), face_owner=owner))}
+    assert len(got) == 1                          # 与候选给出的顺序无关
+    assert owner[got.pop()] == "GUID_A"           # 按标识字典序择小
+
+
 def test_resolve_tie_returns_single_candidate():
     F = np.array(RIDGE_F)
     assert resolve_tie(np.zeros(3), RIDGE_V, F, np.array([2])) == 2

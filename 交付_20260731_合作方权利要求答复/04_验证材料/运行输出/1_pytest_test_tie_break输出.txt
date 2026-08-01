@@ -1,0 +1,28 @@
+$ cd /home/xqin5/patent_gap_nbv && python -m pytest tests/test_tie_break.py -v
+
+============================= test session starts ==============================
+platform linux -- Python 3.12.7, pytest-7.4.4, pluggy-1.6.0 -- /opt/anaconda3/bin/python
+cachedir: .pytest_cache
+hypothesis profile 'default'
+rootdir: /home/xqin5/patent_gap_nbv
+configfile: pyproject.toml
+plugins: hypothesis-6.155.2, mock-3.15.1, dash-4.2.0, cov-7.1.0, anyio-4.13.0
+collecting ... collected 17 items
+tests/test_tie_break.py::test_tie_point_order_independent[0.05] PASSED   [  5%]
+tests/test_tie_break.py::test_tie_point_order_independent[0.2] PASSED    [ 11%]
+tests/test_tie_break.py::test_tie_point_order_independent[0.5] PASSED    [ 17%]
+tests/test_tie_break.py::test_tie_point_unstable_without_rule PASSED     [ 23%]
+tests/test_tie_break.py::test_non_tie_follows_frontality[p0-0] PASSED    [ 29%]
+tests/test_tie_break.py::test_non_tie_follows_frontality[p1-1] PASSED    [ 35%]
+tests/test_tie_break.py::test_rule_is_wired_into_pipeline PASSED         [ 41%]
+tests/test_tie_break.py::test_counts_never_exceed_total_points PASSED    [ 47%]
+tests/test_tie_break.py::test_non_adjacent_tie_order_independent[p0] PASSED [ 52%]
+tests/test_tie_break.py::test_non_adjacent_tie_order_independent[p1] PASSED [ 58%]
+tests/test_tie_break.py::test_candidate_set_matches_brute_force PASSED   [ 64%]
+tests/test_tie_break.py::test_bucketing_handles_uniform_triangle_sizes PASSED [ 70%]
+tests/test_tie_break.py::test_duplicate_faces_resolved_by_owner PASSED   [ 76%]
+tests/test_tie_break.py::test_resolve_tie_returns_single_candidate PASSED [ 82%]
+tests/test_tie_break.py::test_degenerate_triangles[tri0-p0-1.0] PASSED   [ 88%]
+tests/test_tie_break.py::test_degenerate_triangles[tri1-p1-0.0] PASSED   [ 94%]
+tests/test_tie_break.py::test_closest_point_branches PASSED              [100%]
+============================== 17 passed in 2.21s ==============================

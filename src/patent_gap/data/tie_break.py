@@ -10,13 +10,14 @@
   第二级  取“由该三角面上最近表面点指向该点的方向”与该三角面法向所成夹角的
           余弦绝对值最大者（取绝对值使判定不受顶点绕序即法向朝向影响）；
           当最近距离为零、该方向无定义时，视为本级并列，直接进入第三级；
-  第三级  取“三个顶点坐标按字典序排序后所得序列”在字典序上最小者。
+  第三级  取“三个顶点坐标按字典序排序后所得序列”在字典序上最小者；
+  第四级  仅当两个候选三角面几何完全重合时才需要——按其所属构件的标识
+          （face_owner，如 IFC GlobalId）择一；该标识同样与存储顺序无关。
 
 第三级采用三角面自身的几何量而非其存储索引，因此整条规则的结果不依赖三角面在
 文件中的存储顺序——实测（见 tests/test_tie_break.py）：若第三级改用“索引最小者”，
 同一等距点在 24 种三角面排列下会被判给不同的表面分块；改用几何字典序后，24 种
-排列全部给出同一归属。仅当两个候选三角面的顶点集合完全相同（几何重合）时，
-第三级无法区分，此时退回按索引择一；该情形下两者几何等同，归属差异无实际影响。
+排列全部给出同一归属。几何完全重合的三角面由第四级按构件标识裁决（见上）。
 """
 
 from __future__ import annotations
@@ -26,7 +27,7 @@ import numpy as np
 # 距离并列的数值容差（米）。工程实现为浮点运算，理论等距点在不同精度下可能
 # 得到 0.050000000 与 0.050000003 之类的差异，若按严格相等判定，确定性规则
 # 根本不会被触发。取值依据：在真实 IFC 网格（1,197,750 个三角面）与 20,000 点
-# 的实测中，同一点由单精度后端与双精度闭式解得到的最近距离最大相差 8.3e-7 m，
+# 的实测中，同一点由单精度后端与双精度闭式解得到的最近距离最大相差 6.0e-7 m，
 # 故容差取 1e-6 m —— 既能覆盖该量级的浮点差异，又远小于距离阈值 tau_d（0.05 m），
 # 不会把几何上真正不同的三角面误判为并列。
 DEFAULT_TIE_TOL = 1e-6
@@ -86,7 +87,8 @@ def _unit_normal(tri: np.ndarray) -> np.ndarray:
 
 
 def resolve_tie(p: np.ndarray, vertices: np.ndarray, faces: np.ndarray,
-                candidates: np.ndarray, tol: float = DEFAULT_TIE_TOL) -> int:
+                candidates: np.ndarray, tol: float = DEFAULT_TIE_TOL,
+                face_owner: np.ndarray | None = None) -> int:
     """在并列的候选三角面中按说明书规则择一，返回三角面索引。
 
     candidates 为取得（容差内）相同最近距离的三角面索引数组。
@@ -111,10 +113,15 @@ def resolve_tie(p: np.ndarray, vertices: np.ndarray, faces: np.ndarray,
     else:
         keep = candidates                 # 全部方向无定义
 
-    # 第三级：几何字典序最小者（与存储顺序无关）
-    keys = [(_geometric_key(vertices[faces[t]]), int(t)) for t in keep]
+    # 第三级：几何字典序最小者（与存储顺序无关）。
+    # 第四级：几何完全重合时，若二者分属不同构件/分块，按构件标识择一——
+    # face_owner 由 IFC 模型给出（如构件 GlobalId），同样不随存储顺序改变；
+    # 未提供时退回索引，此时应在预处理阶段剔除重复三角面（见说明书）。
+    keys = [(_geometric_key(vertices[faces[t]]),
+             str(face_owner[t]) if face_owner is not None else "",
+             int(t)) for t in keep]
     keys.sort()
-    return keys[0][1]
+    return keys[0][2]
 
 
 def _geometric_key(tri: np.ndarray) -> tuple:
@@ -174,6 +181,7 @@ def nearest_triangle_deterministic(points: np.ndarray, vertices: np.ndarray,
                                    base_indices: np.ndarray,
                                    tol: float = DEFAULT_TIE_TOL,
                                    max_distance: float | None = None,
+                                   face_owner: np.ndarray | None = None,
                                    ) -> tuple[np.ndarray, np.ndarray]:
     """在底层最近点查询结果之上施加说明书规定的确定性规则。
 
@@ -210,7 +218,7 @@ def nearest_triangle_deterministic(points: np.ndarray, vertices: np.ndarray,
                        for t in cand])
         m = float(dd.min())
         tied = cand[dd <= m + tol]
-        out_idx[i] = (resolve_tie(p, vertices, faces, tied, tol)
+        out_idx[i] = (resolve_tie(p, vertices, faces, tied, tol, face_owner)
                       if len(tied) > 1 else int(tied[0]))
         dists[i] = m
     return dists, out_idx
