@@ -8,14 +8,26 @@
     L/low 13%   L/mid 17%   L/high 17%
 
 也就是说大场景被系统性地少给了三到四倍预算, 跨场景比较把"方法好坏"和"预算够
-不够"混在了一起, 而 L 家族从未被测过。E5 改为**按完整扫描的固定比例给预算**:
+不够"混在了一起, 而 L 家族从未被测过。这不是理论顾虑 —— L/high seed 0 上的直接
+反例:
 
-    stations_max = max(3, round(BUDGET_FRAC · n_full_stations))
+    预算 6 站:  Bdisp awc 0.877 / asset 0.909  >  B10 awc 0.829 / asset 0.884
+    预算 14 站: Bdisp awc 0.899 / asset 0.970  <  B10 awc 0.990 / asset 0.995
+                                                  (且 B10 路径反而短 10%)
 
-n_full_stations 由 build_ground_truth 给出(参考站集 S_full 的规模), 随场景自动
-缩放, 且可解释为"只给完整普查三分之一的站, 能追回多少缺口"。路径上限取每站
-60 m, 宽到基本不成为第二个约束 —— 走多远的代价由时间归一指标 awc/1000s 承担,
-不必再用硬上限去压。
+6 站恰好卡在"无信息启发式已经吃饱、B10 还没吃饱"的那个点上, 固定预算因此系统性
+偏袒前重型启发式, 在大站上把结论读反。
+
+E5 按**每固定数量的 BIM 构件给一站**分配预算:
+
+    stations_max = max(3, round(n_components / COMPONENTS_PER_STATION))
+
+锚在构件数而不是 n_full_stations: 后者是 8 m 网格里的自由格数, 场景越密自由格
+越少, 于是越复杂的场景反而拿到越少的站 —— 实测按 n_full 分配时"每站负责的构件
+数"在 5.0(L/low) 到 21.0(S/high) 之间差 4.2 倍, 且与场景难度反着走。按构件数
+分配后该值稳定在 8.9–9.9。路径上限取每站 60 m, 宽到基本不绑定 —— 走多远的代价
+由时间归一指标承担, 不必再用硬上限去压(注意 awc/1000s 与 B10 的内部成本同构,
+见 OPEN_ISSUES #30, 不能作独立确认)。
 
 稳定性看两件事: 各方法在 9 类场景上的**均值**, 以及**跨场景变异系数**与最差
 场景。一个只在小场景好用的方法, 均值可能不难看, 变异系数会暴露它。
@@ -50,7 +62,12 @@ METHODS = ["Bdisp_maxmin", "B5_occ_rng", "B10_full"]
 FAMILIES = ["S", "M", "L"]
 DENSITIES = ["low", "mid", "high"]
 SEEDS = [0, 1, 2]
-BUDGET_FRAC = 0.35        # 完整扫描站数的占比
+# 每站负责多少个 BIM 构件。锚在构件数而不是 n_full_stations: 后者是 8 m 网格里
+# 的自由格数, 场景越密自由格越少, 于是**越复杂的场景拿到越少的站** —— 实测按
+# n_full 分配时"每站负责的构件数"在 5.0(L/low) 到 21.0(S/high) 之间差 4.2 倍,
+# 且与场景难度反着走。按构件数分配则单调随规模与密度增长。
+# 取 9.3 使 S/low(56 构件) 得到 6 站, 与既有 E2 协议对齐。
+COMPONENTS_PER_STATION = 9.3
 LEN_PER_STATION = 60.0    # m/站, 宽到基本不绑定
 V_MOVE, T_SCAN = 0.5, 180.0
 KEYS = ["awc_gap_recovery", "asset_recovery", "crit_recall", "dens_ok"]
@@ -73,7 +90,7 @@ def main() -> None:
     out_root = Path(args.out)
 
     cfg = {"families": FAMILIES, "densities": DENSITIES, "seeds": SEEDS,
-           "methods": METHODS, "budget_frac": BUDGET_FRAC,
+           "methods": METHODS, "components_per_station": COMPONENTS_PER_STATION,
            "len_per_station": LEN_PER_STATION,
            "sensor": {"dtheta_deg": 0.4, "r": [0.5, 10.0, 60.0], "sigma_r": 0.005},
            "rho0": 50.0, "init_stations": 3}
@@ -97,7 +114,8 @@ def main() -> None:
                     probe.add_station(o, f"init_{k}", seed=seed * 100 + k)
                 gt = build_ground_truth(world, list(probe.masks))
                 n_full = int(gt["n_full_stations"])
-                n_st = max(3, int(round(cfg["budget_frac"] * n_full)))
+                n_comp = int(world.patches["element_guid"].nunique())
+                n_st = max(3, int(round(n_comp / cfg["components_per_station"])))
                 len_max = cfg["len_per_station"] * n_st
                 print(f"[e5] {scene_name}/seed{seed}: patches={len(world.patches)} "
                       f"gaps={int(np.sum(gt['y']))} n_full={n_full} "
@@ -120,7 +138,8 @@ def main() -> None:
                                "history": [], "final": None}
                     res.update({"method": method, "family": family, "density": density,
                                 "scene": scene_name, "scene_seed": seed,
-                                "n_full_stations": n_full, "stations_budget": n_st,
+                                "n_full_stations": n_full, "n_components": n_comp,
+                                "stations_budget": n_st,
                                 "n_patches": len(world.patches),
                                 "config_hash": cfg_hash, "git_commit": commit,
                                 "runtime_s": round(time.time() - t0, 1)})
@@ -155,30 +174,33 @@ def summarize(out_root: Path, cfg: dict, cfg_hash: str, commit: str) -> None:
                                  "density": density, "seed": seed,
                                  "scene": f"scene_{family}_{density}",
                                  "stations_budget": r.get("stations_budget"),
+                                 "n_components": r.get("n_components"),
                                  "n_full_stations": r.get("n_full_stations"), **fin})
     if not rows:
         return
 
     lines = ["# E5: 跨规模/密度稳定性", "",
              f"- config_hash `{cfg_hash}`, commit `{commit}`, runs={len(rows)}",
-             f"- 预算按完整扫描站数的 {cfg['budget_frac']:.0%} 给, 不再对所有场景"
-             f"一律 6 站 —— 固定预算下 S 场景拿到完整扫描的 46–60%, L 场景只有 13–17%",
+             f"- 预算按每 {cfg['components_per_station']:.1f} 个 BIM 构件给 1 站。"
+             f"固定 6 站时 L/high 只拿到完整扫描的 17%、S/low 拿到 46%, 大场景被"
+             f"系统性少给三到四倍; 而按 n_full 分配又与场景复杂度反着走",
              "", "## 逐场景 awc 恢复率", "",
-             "| 场景 | 完整站数 | 预算站数 | " + " | ".join(cfg["methods"]) + " |",
-             "|---" * (3 + len(cfg["methods"])) + "|"]
+             "| 场景 | 构件数 | 完整站数 | 预算站数 | " + " | ".join(cfg["methods"]) + " |",
+             "|---" * (4 + len(cfg["methods"])) + "|"]
     for family in cfg["families"]:
         for density in cfg["densities"]:
             sub = [r for r in rows if r["family"] == family and r["density"] == density]
             if not sub:
                 continue
             nf = float(np.nanmean([r["n_full_stations"] for r in sub]))
+            nc = float(np.nanmean([r["n_components"] for r in sub]))
             nb = float(np.nanmean([r["stations_budget"] for r in sub]))
             cells = []
             for m in cfg["methods"]:
                 v = [r.get("awc_gap_recovery", float("nan"))
                      for r in sub if r["method"] == m]
                 cells.append(f"{float(np.nanmean(v)):.3f}" if v else "—")
-            lines.append(f"| {family}/{density} | {nf:.0f} | {nb:.0f} | "
+            lines.append(f"| {family}/{density} | {nc:.0f} | {nf:.0f} | {nb:.0f} | "
                          + " | ".join(cells) + " |")
 
     # 稳定性: 跨场景类型的均值/变异系数/最差场景
