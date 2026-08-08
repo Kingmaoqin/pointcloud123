@@ -370,6 +370,9 @@ class EpisodeConfig:
     rounds_max: int = 6
     rho0: float = 400.0
     lambda_e: float = 1.0
+    # 见 V2Config.lambda_e_value: 价值通路的 ρ_req 重要度系数。取 1.0 复现
+    # 升级前行为(重要度在未饱和区被整除掉), 取 0.0 让重要度真正生效。
+    lambda_e_value: float = 0.0
     seed: int = 0
     method: str = "B10_full"
     # 闭环中"本轮执行哪一站"的策略（见 docs/闭环执行策略升级.md）：
@@ -436,7 +439,8 @@ def _select_next_station(world: SimWorld, obs: ObsState, cfg: EpisodeConfig,
 
     # v2 路径(B5/B10)
     v2cfg = V2Config(use_reg_term=(method != "B5_occ_rng"),
-                     rho0=cfg.rho0, lambda_e=cfg.lambda_e)
+                     rho0=cfg.rho0, lambda_e=cfg.lambda_e,
+                     lambda_e_value=cfg.lambda_e_value)
     C = obs.coverage()
     cs = score_candidates_v2(scores, cand, world.plan_oracle, world.sampler,
                              world.sensor, C, v2cfg)

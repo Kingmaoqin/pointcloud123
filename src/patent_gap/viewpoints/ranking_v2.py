@@ -37,6 +37,18 @@ class V2Config:
     use_reg_term: bool = True
     rho0: float = 400.0
     lambda_e: float = 1.0
+    # 视点价值通路里 ρ_req 的重要度系数, 与证据通路(34)的 lambda_e 分开取值。
+    #
+    # 两者取同一个值会精确抵消: (41) 的收益权含 G_task ∝ (1+λ·E_i), (35) 的
+    # g^rng = clip(ρ̂/(ρ_0(1+λ_E·E_i))), 在未饱和区(ρ̂<ρ_req)二者相乘得
+    #   (1+λ·E)·ρ̂/(ρ_0(1+λ_E·E)) = ρ̂/ρ_0     (λ=λ_E 时)
+    # 重要度被整除掉 —— 实测 15 m 外或斜入射处主变与杂物的单位面积权重之比
+    # 恰为 1.00, 也就是公式(33) 反而抵消了(41) 想表达的优先级。
+    #
+    # λ_E 本就是(33) 的自由参数, 取 0 仍在公式族内: 价值通路用统一参考密度
+    # ρ_0 度量"这一站能达到多少", 重要度只通过 G_task 起作用; 证据通路(34)
+    # 仍按 ρ_req = ρ_0(1+E) 判定"够不够", 重要资产的密度缺口照样更大。
+    lambda_e_value: float = 0.0
 
 
 @dataclass
@@ -77,7 +89,7 @@ def score_candidates_v2(
     g_gap = pd.to_numeric(patch_scores["G_gap"], errors="coerce").fillna(0).to_numpy()
     g_task = pd.to_numeric(patch_scores["G_task"], errors="coerce").fillna(0).to_numpy()
     imp = pd.to_numeric(patch_scores["engineering_importance"], errors="coerce").fillna(0.5).to_numpy()
-    rho_req = rho_required(imp, cfg.rho0, cfg.lambda_e)
+    rho_req = rho_required(imp, cfg.rho0, cfg.lambda_e_value)
     patch_ids = patch_scores["patch_id"].to_numpy()
     coverage = np.asarray(coverage, dtype=np.float64).reshape(J)
 
