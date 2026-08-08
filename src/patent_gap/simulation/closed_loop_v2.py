@@ -384,6 +384,28 @@ def _select_next_station(world: SimWorld, obs: ObsState, cfg: EpisodeConfig,
                 return np.array([xy[0], xy[1], TRIPOD_Z]), d
         return None
 
+    if method == "Bdisp_maxmin":
+        # 平凡对照: 完全不使用任何缺口证据/可见性/密度模型, 只在可通行自由格中
+        # 取"离已执行站最远"(max-min 离散度)。用于检验公式(26)-(45) 相对一个
+        # 无信息启发式是否真有优势 —— 若无, 整套机制的收益主张不成立。
+        free_cells = np.argwhere(world.grid._compute_free())
+        done = np.array([s.origin[:2] for s in obs.scans], dtype=float)
+        best, best_d, best_score = None, None, -np.inf
+        idx = rng.permutation(len(free_cells))[:400]   # 固定预算, 与 B0 同量级
+        for t in idx:
+            i, j = free_cells[t]
+            xy = np.asarray(world.grid.to_xy((i, j)), dtype=float)
+            sep = float(np.min(np.linalg.norm(done - xy[None, :], axis=1))) if len(done) else 1e9
+            if sep <= best_score:
+                continue
+            d, _ = world.grid.astar(v0_xy, xy)
+            if not np.isfinite(d) or d > budget_left:
+                continue
+            best, best_d, best_score = xy, d, sep
+        if best is None:
+            return None
+        return np.array([best[0], best[1], TRIPOD_Z]), best_d
+
     extended = method not in ("B1_patent",)
     scores = compute_scores(obs, extended=extended, rho0=cfg.rho0, lambda_e=cfg.lambda_e)
     scores = scores.sort_values("patch_id").reset_index(drop=True)
