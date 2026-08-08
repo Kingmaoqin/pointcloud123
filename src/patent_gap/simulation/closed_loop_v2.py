@@ -22,6 +22,7 @@ from ..planning.objective import ObjectiveParams
 from ..planning.route import solve_tsp
 from ..planning.set_select import lazy_greedy
 from ..registration.predictor import degeneracy, expected_overlap, r_reg, split_regions
+from ..registration.realism import register_station
 from ..sensors.model import SensorModel
 from ..viewpoints.ranking import generate_candidates, score_candidates
 from ..viewpoints.ranking_v2 import V2Config, score_candidates_v2
@@ -108,6 +109,49 @@ class ObsState:
         self.scans.append(scan)
         self.masks.append(station_sample_masks(self.world, origin))
         return scan
+
+    def drop_last_station(self) -> None:
+        """配准失败的一站拼不进全局坐标系, 其数据整体不可用(路程与时间照付)。"""
+        if self.scans:
+            self.scans.pop()
+            self.masks.pop()
+
+    def registration_of_last(self, o_min: float, tau_cov: float) -> tuple[float, int, float]:
+        """新站相对既有站集的**实际**重叠率、重叠点数与重叠区退化度。
+
+        与 score_candidates_v2 里对候选做的预测同构, 区别是这里用真正测到的
+        可见掩码, 而不是对 BIM 的预测 —— 被预测的量与预测量必须分开。
+        """
+        if len(self.masks) < 2:
+            return 1.0, 10 ** 6, 0.0
+        pids = self.world.sampler.patch_ids()
+        new = self.masks[-1]
+        prior = self.masks[:-1]
+        pts, nrms, n_new, n_ovl = [], [], 0, 0
+        p = self.world.patches
+        nrm_all = p[["normal_x", "normal_y", "normal_z"]].to_numpy()
+        nrm_all = nrm_all / np.maximum(np.linalg.norm(nrm_all, axis=1, keepdims=True), 1e-9)
+        idx = {int(v): k for k, v in enumerate(p["patch_id"].to_numpy())}
+        for pid in pids:
+            m = new[pid]
+            if not len(m) or not m.any():
+                continue
+            seen = np.zeros(len(m), dtype=bool)
+            for pm in prior:
+                seen |= pm[pid]
+            both = m & seen
+            n_new += int(m.sum())
+            n_ovl += int(both.sum())
+            k = idx.get(int(pid))
+            if k is not None and both.any():
+                sm = self.world.sampler.samples(int(pid))
+                if len(sm) == len(both):
+                    pts.append(sm[both])
+                    nrms.append(np.tile(nrm_all[k], (int(both.sum()), 1)))
+        if n_new == 0:
+            return 0.0, 0, 1.0
+        dg = degeneracy(np.vstack(pts), np.vstack(nrms)) if pts else 1.0
+        return n_ovl / n_new, n_ovl, dg
 
     # ---- 逐 Patch 聚合量 ----
     def coverage(self) -> np.ndarray:
@@ -391,6 +435,10 @@ class EpisodeConfig:
     # 是否用已测点云在线发现 BIM 未建模的遮挡物并修正规划遮挡模型(见
     # occlusion/discovery.py)。B11_disc 即 B10 + 该项。
     discover_occluders: bool = False
+    # 是否按实际重叠与退化度判定每一站的配准成败(见 registration/realism.py)。
+    # 关闭时所有站无条件拼合, 公式(36)-(40) 预测的量在世界里不存在。
+    registration_realism: bool = False
+    reg_tol_m: float = 0.05
     # 闭环中"本轮执行哪一站"的策略（见 docs/闭环执行策略升级.md）：
     #   "tsp_first"    公式(45)原定：执行 TSP 路线首站（为走完整条路线而排序）
     #   "greedy_first" 执行懒惰贪心的首选（性价比最高者）
@@ -563,6 +611,7 @@ def run_episode(world: SimWorld, init_origins: list[np.ndarray],
 
     # 未建模遮挡物在线发现: 初始站的点云先并入, 首轮选站就能用上
     disc = None
+    reg_log: list[dict] = []
     plan_oracle = world.plan_oracle
     if cfg.discover_occluders or cfg.method == "B11_disc":
         bim = world.scene.bim_tri_mask()
@@ -587,16 +636,28 @@ def run_episode(world: SimWorld, init_origins: list[np.ndarray],
             break
         origin, d = res
         scan = obs.add_station(origin, f"{cfg.method}_r{rnd}", seed=cfg.seed * 100 + 50 + rnd)
-        if disc is not None and disc.update(scan.points) > 0:
+        if cfg.registration_realism:
+            ov, n_ovl, dg = obs.registration_of_last(V2Config().o_min, V2Config().tau_cov)
+            ok_reg, err = register_station(ov, n_ovl, dg, world.sensor.sigma_r, rng,
+                                           o_min=V2Config().o_min, tol_m=cfg.reg_tol_m)
+            reg_log.append({"round": rnd, "overlap": ov, "n_overlap": int(n_ovl),
+                            "degen": dg, "pose_err_m": err, "accepted": bool(ok_reg)})
+            if not ok_reg:
+                obs.drop_last_station()   # 拼不进全局系, 数据作废; 路程与时间照付
+                scan = None
+        if scan is not None and disc is not None and disc.update(scan.points) > 0:
             plan_oracle = disc.build_oracle()   # 只在真有新发现时重建 BVH
         path_len += d
         executed += 1
         v0_xy = tuple(origin[:2])
         history.append(episode_metrics(world, gt, obs.coverage(), obs.point_counts(),
                                        path_len, executed, cfg.rho0, cfg.lambda_e))
+    final = dict(history[-1])
+    if cfg.registration_realism:
+        final["n_reg_failed"] = int(sum(not r["accepted"] for r in reg_log))
     return {"method": cfg.method, "seed": cfg.seed, "gt": {k: (v.tolist() if isinstance(v, np.ndarray) else v)
                                                            for k, v in gt.items()},
-            "history": history, "final": history[-1], "status": "ok"}
+            "history": history, "final": final, "registration": reg_log, "status": "ok"}
 
 
 def default_init_stations(world: SimWorld, n: int = 4,

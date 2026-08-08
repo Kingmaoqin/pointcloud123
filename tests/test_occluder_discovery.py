@@ -80,3 +80,37 @@ def test_b11_equals_b10_without_divergence(n_temp):
     a, b = run("B10_full"), run("B11_disc")
     for k in ("awc_gap_recovery", "asset_recovery", "crit_recall", "path_len_m"):
         assert a[k] == pytest.approx(b[k], abs=1e-12), k
+
+
+def test_registration_realism_penalises_ill_conditioned_overlap():
+    """配准误差须随重叠点数与退化度变化, 且默认关闭时不改变任何行为。"""
+    import numpy as np
+
+    from patent_gap.registration.realism import pose_error_sigma, register_station
+
+    # 1/√K 收缩: 点数增至 100 倍, 高于系统性下限的部分应降至 1/10
+    from patent_gap.registration.realism import SIGMA_POSE_FLOOR
+    s_few = pose_error_sigma(50, 0.5, 0.005) - SIGMA_POSE_FLOOR
+    s_many = pose_error_sigma(5000, 0.5, 0.005) - SIGMA_POSE_FLOOR
+    assert s_few == pytest.approx(10 * s_many, rel=1e-6)
+
+    # 条件数放大: 同样点数下退化度越高误差越大
+    assert pose_error_sigma(500, 0.99, 0.005) > 5 * pose_error_sigma(500, 0.5, 0.005)
+
+    # 重叠率低于 O_min 直接判失败, 与误差大小无关
+    rng = np.random.default_rng(0)
+    ok, _ = register_station(0.10, 10000, 0.0, 0.005, rng, o_min=0.30)
+    assert not ok
+
+    # 关闭时 run_episode 不得出现配准字段, 也不得改变结果
+    _, world = _world(n_temp=0)
+    init = default_init_stations(world, n=3)
+    probe = ObsState(world=world)
+    for k, o in enumerate(init):
+        probe.add_station(o, f"i{k}", seed=k)
+    gt = build_ground_truth(world, list(probe.masks))
+    base = EpisodeConfig(stations_max=2, length_max_m=400.0, rounds_max=2,
+                         rho0=50.0, seed=0, method="B10_full")
+    off = run_episode(world, init, base, gt=gt)
+    assert off["registration"] == []
+    assert "n_reg_failed" not in off["final"]
