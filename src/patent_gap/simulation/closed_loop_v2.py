@@ -301,8 +301,20 @@ def episode_metrics(world: SimWorld, gt: dict, C_now: np.ndarray,
     dens_ok = float(((n_pts / np.maximum(area, 1e-9)) >= rho_req).mean())
     crit = y & (imp >= 0.8)
     crit_recall = float((C_now[crit] >= 0.5 * C_gt[crit]).mean()) if crit.any() else float("nan")
+    # 按 BIM 构件等权的恢复率。awc 以面积加权, 实测在 S/low 上 4 个主变面 +
+    # 5 个建筑面就占了 92% 的权重, 十几个断路器/互感器合计不到 4% —— 一个只
+    # 刷大平面的方案能拿到很高的 awc。验收关心的是"每个资产是否都扫到了",
+    # 所以构件内按面积加权, 构件之间等权。
+    guid = p["element_guid"].to_numpy()
+    per_asset = []
+    for g in np.unique(guid[y]):
+        m = y & (guid == g)
+        wa = w[m]
+        per_asset.append(float((rec[m] * wa).sum() / max(wa.sum(), 1e-9)))
+    asset_recovery = float(np.mean(per_asset)) if per_asset else float("nan")
     return {
         "awc_gap_recovery": awc,
+        "asset_recovery": asset_recovery,
         "dens_ok": dens_ok,
         "crit_recall": crit_recall,
         "path_len_m": float(path_len),
