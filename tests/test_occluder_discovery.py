@@ -1,0 +1,82 @@
+"""未建模遮挡物在线发现(occlusion/discovery.py)。"""
+
+from __future__ import annotations
+
+import numpy as np
+import pytest
+
+from patent_gap.occlusion.discovery import UnmodeledOccluders
+from patent_gap.sensors.model import SensorModel
+from patent_gap.simulation.closed_loop_v2 import (
+    EpisodeConfig, ObsState, SimWorld, build_ground_truth,
+    default_init_stations, run_episode,
+)
+from patent_gap.simulation.scene_gen import generate_scene
+
+SENSOR = {"dtheta_deg": 0.4, "r": [0.5, 10.0, 60.0], "sigma_r": 0.005}
+
+
+def _world(n_temp: int):
+    scene = generate_scene(seed=0, family="S", density="low", n_temp=n_temp)
+    return scene, SimWorld.build(scene, SensorModel.from_config(SENSOR),
+                                 sim_dtheta_deg=0.4)
+
+
+def test_nothing_discovered_when_bim_matches_reality():
+    """BIM 与实景一致时不得"发现"任何东西 —— 否则是把噪声当障碍。"""
+    scene, world = _world(n_temp=0)
+    bim = scene.bim_tri_mask()
+    disc = UnmodeledOccluders(scene.vertices, scene.triangles[bim],
+                             world.tri_to_patch[bim])
+    obs = ObsState(world=world)
+    for k, o in enumerate(default_init_stations(world, n=2)):
+        obs.add_station(o, f"i{k}", seed=k)
+        disc.update(obs.scans[-1].points)
+    assert disc.n_cells() == 0
+    assert disc.build_oracle().tri_to_patch.shape[0] == int(bim.sum())
+
+
+def test_discovers_the_occluders_bim_lacks():
+    """临时占位物应被发现, 且发现的体素确实落在它们身上。"""
+    scene, world = _world(n_temp=6)
+    bim = scene.bim_tri_mask()
+    disc = UnmodeledOccluders(scene.vertices, scene.triangles[bim],
+                             world.tri_to_patch[bim])
+    obs = ObsState(world=world)
+    for k, o in enumerate(default_init_stations(world, n=3)):
+        obs.add_station(o, f"i{k}", seed=k)
+        disc.update(obs.scans[-1].points)
+    assert disc.n_cells() > 0
+
+    boxes = [(c.bbox_min, c.bbox_max) for c in scene.components if not c.in_bim]
+    centers = (np.array(sorted(disc.cells), dtype=float) + 0.5) * disc.voxel
+    inside = np.zeros(len(centers), dtype=bool)
+    for lo, hi in boxes:                      # 体素边长带来的外扩容差
+        inside |= ((centers >= lo - disc.voxel).all(axis=1)
+                   & (centers <= hi + disc.voxel).all(axis=1))
+    assert inside.mean() > 0.9, f"仅 {inside.mean():.0%} 的发现体素落在临时占位物上"
+
+    # 发现体是遮挡体而非待扫资产: 不得引入新的 Patch 归属
+    oracle = disc.build_oracle()
+    assert oracle.tri_to_patch.shape[0] > int(bim.sum())
+    assert (oracle.tri_to_patch[int(bim.sum()):] == -1).all()
+
+
+@pytest.mark.parametrize("n_temp", [0])
+def test_b11_equals_b10_without_divergence(n_temp):
+    """无 BIM 失配时 B11 不得偏离 B10 —— 发现机制不能自己引入扰动。"""
+    _, world = _world(n_temp)
+    init = default_init_stations(world, n=3)
+    probe = ObsState(world=world)
+    for k, o in enumerate(init):
+        probe.add_station(o, f"i{k}", seed=k)
+    gt = build_ground_truth(world, list(probe.masks))
+
+    def run(method):
+        return run_episode(world, init, EpisodeConfig(
+            stations_max=3, length_max_m=400.0, rounds_max=3,
+            rho0=50.0, seed=0, method=method), gt=gt)["final"]
+
+    a, b = run("B10_full"), run("B11_disc")
+    for k in ("awc_gap_recovery", "asset_recovery", "crit_recall", "path_len_m"):
+        assert a[k] == pytest.approx(b[k], abs=1e-12), k

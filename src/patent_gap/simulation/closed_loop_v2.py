@@ -15,6 +15,7 @@ import pandas as pd
 from ..gap.scoring import compute_patch_scores
 from ..io.station_npz import StationScan
 from ..mapping.traversability import TravGrid
+from ..occlusion.discovery import UnmodeledOccluders
 from ..occlusion.raycast import OcclusionOracle
 from ..occlusion.sampling import PatchSampler
 from ..planning.objective import ObjectiveParams
@@ -387,6 +388,9 @@ class EpisodeConfig:
     lambda_e_value: float = 0.0
     seed: int = 0
     method: str = "B10_full"
+    # 是否用已测点云在线发现 BIM 未建模的遮挡物并修正规划遮挡模型(见
+    # occlusion/discovery.py)。B11_disc 即 B10 + 该项。
+    discover_occluders: bool = False
     # 闭环中"本轮执行哪一站"的策略（见 docs/闭环执行策略升级.md）：
     #   "tsp_first"    公式(45)原定：执行 TSP 路线首站（为走完整条路线而排序）
     #   "greedy_first" 执行懒惰贪心的首选（性价比最高者）
@@ -395,9 +399,15 @@ class EpisodeConfig:
 
 
 def _select_next_station(world: SimWorld, obs: ObsState, cfg: EpisodeConfig,
-                         v0_xy, rng, budget_left: float) -> tuple[np.ndarray, float] | None:
-    """一轮选站(方法分派), 返回 (下一站原点, A*距离) 或 None。"""
+                         v0_xy, rng, budget_left: float,
+                         plan_oracle=None) -> tuple[np.ndarray, float] | None:
+    """一轮选站(方法分派), 返回 (下一站原点, A*距离) 或 None。
+
+    plan_oracle 为规划器可用的遮挡模型; 缺省即设计 BIM。B11_disc 会传入被
+    已发现的未建模遮挡物增量修正过的版本。
+    """
     method = cfg.method
+    plan_oracle = plan_oracle if plan_oracle is not None else world.plan_oracle
     if method == "B0_random":
         free_cells = np.argwhere(world.grid._compute_free())
         for _ in range(200):
@@ -454,12 +464,12 @@ def _select_next_station(world: SimWorld, obs: ObsState, cfg: EpisodeConfig,
                      rho0=cfg.rho0, lambda_e=cfg.lambda_e,
                      lambda_e_value=cfg.lambda_e_value)
     C = obs.coverage()
-    cs = score_candidates_v2(scores, cand, world.plan_oracle, world.sampler,
+    cs = score_candidates_v2(scores, cand, plan_oracle, world.sampler,
                              world.sensor, C, v2cfg)
     if not cs and v2cfg.use_reg_term:
         # 硬约束 O^reg<O_min 全灭(早期覆盖过低)→ 软回退: 去掉重叠门重评
         import dataclasses
-        cs = score_candidates_v2(scores, cand, world.plan_oracle, world.sampler,
+        cs = score_candidates_v2(scores, cand, plan_oracle, world.sampler,
                                  world.sensor, C,
                                  dataclasses.replace(v2cfg, o_min=1e-9))
     if not cs:
@@ -551,6 +561,17 @@ def run_episode(world: SimWorld, init_origins: list[np.ndarray],
     if gt is None:
         gt = build_ground_truth(world, list(obs.masks))
 
+    # 未建模遮挡物在线发现: 初始站的点云先并入, 首轮选站就能用上
+    disc = None
+    plan_oracle = world.plan_oracle
+    if cfg.discover_occluders or cfg.method == "B11_disc":
+        bim = world.scene.bim_tri_mask()
+        disc = UnmodeledOccluders(world.scene.vertices, world.scene.triangles[bim],
+                                  world.tri_to_patch[bim], seed=cfg.seed)
+        for scan in obs.scans:
+            disc.update(scan.points)
+        plan_oracle = disc.build_oracle()
+
     v0_xy = tuple(init_origins[-1][:2])
     path_len = 0.0
     history = [episode_metrics(world, gt, obs.coverage(), obs.point_counts(),
@@ -560,11 +581,14 @@ def run_episode(world: SimWorld, init_origins: list[np.ndarray],
         if executed >= cfg.stations_max or path_len >= cfg.length_max_m:
             break
         res = _select_next_station(world, obs, cfg, v0_xy, rng,
-                                   budget_left=cfg.length_max_m - path_len)
+                                   budget_left=cfg.length_max_m - path_len,
+                                   plan_oracle=plan_oracle)
         if res is None:
             break
         origin, d = res
-        obs.add_station(origin, f"{cfg.method}_r{rnd}", seed=cfg.seed * 100 + 50 + rnd)
+        scan = obs.add_station(origin, f"{cfg.method}_r{rnd}", seed=cfg.seed * 100 + 50 + rnd)
+        if disc is not None and disc.update(scan.points) > 0:
+            plan_oracle = disc.build_oracle()   # 只在真有新发现时重建 BVH
         path_len += d
         executed += 1
         v0_xy = tuple(origin[:2])
