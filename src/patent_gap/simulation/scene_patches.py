@@ -27,6 +27,10 @@ def build_scene_patches(scene: SceneModel, normal_threshold_deg: float = 20.0,
     for comp in scene.components:
         if comp.cls == "ground":
             continue
+        # 缺口检测的目标集是 BIM 构件清单。竣工态临时占位物在 BIM 中查不到,
+        # 不构成待扫资产, 只作为遮挡体参与光线求交(tri_to_patch 保持 -1)。
+        if not comp.in_bim:
+            continue
         idx = np.arange(comp.tri_start, comp.tri_end)
         if len(idx) == 0:
             continue

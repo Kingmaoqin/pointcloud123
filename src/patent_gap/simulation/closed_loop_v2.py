@@ -38,24 +38,33 @@ class SimWorld:
     scene: SceneModel
     patches: pd.DataFrame
     tri_to_patch: np.ndarray
-    oracle: OcclusionOracle
+    oracle: OcclusionOracle        # 竣工实景几何: 仿真与评测用
     sampler: PatchSampler
     grid: TravGrid
     sim: FallbackSimulator
     sensor: SensorModel        # 仿真实际角步长的 Θ
+    plan_oracle: OcclusionOracle | None = None   # 设计 BIM 几何: 规划器用
 
     @classmethod
     def build(cls, scene: SceneModel, sensor: SensorModel,
               sim_dtheta_deg: float = 0.3) -> "SimWorld":
         patches, tri_to_patch = build_scene_patches(scene)
         oracle = OcclusionOracle(scene.vertices, scene.triangles, tri_to_patch)
+        # 规划器只有设计 BIM: 竣工态临时占位物挡得住扫描仪, 却挡不住规划器的
+        # 预测。两套几何分开, 公式(27)(28) 的 Vis 才是可能出错的预测量, 而不是
+        # 与评测真值同源的恒等式(否则"遮挡感知有效"无法被证伪)。
+        # n_temp=0 时两者逐比特相同, 既有基准结果不受影响。
+        bim = scene.bim_tri_mask()
+        plan_oracle = (oracle if bool(bim.all()) else
+                       OcclusionOracle(scene.vertices, scene.triangles[bim],
+                                       tri_to_patch[bim]))
         sampler = PatchSampler(scene.vertices, scene.triangles, tri_to_patch)
         grid = build_trav_grid(scene)
         sim = FallbackSimulator(scene.vertices, scene.triangles, tri_to_patch,
                                 sensor, sim_dtheta_deg=sim_dtheta_deg)
         return cls(scene=scene, patches=patches, tri_to_patch=tri_to_patch,
                    oracle=oracle, sampler=sampler, grid=grid, sim=sim,
-                   sensor=sim.effective_sensor())
+                   sensor=sim.effective_sensor(), plan_oracle=plan_oracle)
 
 
 def station_sample_masks(world: SimWorld, origin: np.ndarray) -> dict[int, np.ndarray]:
@@ -429,12 +438,12 @@ def _select_next_station(world: SimWorld, obs: ObsState, cfg: EpisodeConfig,
     v2cfg = V2Config(use_reg_term=(method != "B5_occ_rng"),
                      rho0=cfg.rho0, lambda_e=cfg.lambda_e)
     C = obs.coverage()
-    cs = score_candidates_v2(scores, cand, world.oracle, world.sampler,
+    cs = score_candidates_v2(scores, cand, world.plan_oracle, world.sampler,
                              world.sensor, C, v2cfg)
     if not cs and v2cfg.use_reg_term:
         # 硬约束 O^reg<O_min 全灭(早期覆盖过低)→ 软回退: 去掉重叠门重评
         import dataclasses
-        cs = score_candidates_v2(scores, cand, world.oracle, world.sampler,
+        cs = score_candidates_v2(scores, cand, world.plan_oracle, world.sampler,
                                  world.sensor, C,
                                  dataclasses.replace(v2cfg, o_min=1e-9))
     if not cs:

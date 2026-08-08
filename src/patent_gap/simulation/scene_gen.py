@@ -27,6 +27,9 @@ CLASS_TABLE: dict[str, tuple[float, bool, float]] = {
     "building": (0.3, False, 0.0),
     "clutter": (0.1, False, 0.0),
     "ground": (0.1, False, 0.0),
+    # 竣工态特有的临时占位物(车辆/料堆/脚手架): 真实站里存在, 设计 BIM 里没有。
+    # 规划器看不到它们, 扫描仪却会被它们挡住 —— 见 SceneModel.bim_tri_mask。
+    "temp_obstacle": (0.1, False, 0.0),
 }
 
 SIZE_TABLE = {"S": (44.0, 32.0, 2), "M": (58.0, 42.0, 3), "L": (74.0, 52.0, 4)}
@@ -45,6 +48,7 @@ class Component:
     bbox_max: np.ndarray
     tri_start: int
     tri_end: int                # [start, end) 三角面全局索引
+    in_bim: bool = True         # False = 只存在于竣工实景, 设计 BIM 中查不到
 
 
 @dataclass
@@ -58,6 +62,19 @@ class SceneModel:
     seed: int = 0
     family: str = "S"
     density: str = "mid"
+
+    def bim_tri_mask(self) -> np.ndarray:
+        """(T,) bool: 该三角面在设计 BIM 中是否存在。
+
+        规划阶段只有 BIM 可用, 临时占位物查不到; 评测/仿真用完整竣工几何。
+        两者不一致正是闭环重扫(45)要解决的问题 —— 若规划器直接用竣工几何,
+        可见性预测与评测真值同源, 遮挡感知就无法被证伪。
+        """
+        mask = np.ones(len(self.triangles), dtype=bool)
+        for c in self.components:
+            if not c.in_bim:
+                mask[c.tri_start:c.tri_end] = False
+        return mask
 
     @property
     def l_diag(self) -> float:
@@ -75,7 +92,8 @@ class _Builder:
         self._nv = 0
         self._nt = 0
 
-    def add(self, mesh: trimesh.Trimesh, cls: str, clearance_z: float = 0.0) -> None:
+    def add(self, mesh: trimesh.Trimesh, cls: str, clearance_z: float = 0.0,
+            in_bim: bool = True) -> None:
         e_i, live, d_safe = CLASS_TABLE[cls]
         comp_id = len(self.components)
         v = np.asarray(mesh.vertices, dtype=np.float64)
@@ -89,7 +107,7 @@ class _Builder:
                 comp_id=comp_id, cls=cls, importance=e_i, live=live, d_safe=d_safe,
                 clearance_z=clearance_z,
                 bbox_min=v.min(axis=0), bbox_max=v.max(axis=0),
-                tri_start=self._nt, tri_end=self._nt + len(f)))
+                tri_start=self._nt, tri_end=self._nt + len(f), in_bim=in_bim))
         else:
             self.components.append(Component(
                 comp_id=comp_id, cls=cls, importance=e_i, live=False, d_safe=0.0,
@@ -158,7 +176,13 @@ def _gantry_with_busbar(b: _Builder, x0, x1, y, rng) -> None:
         b.add(_cyl(0.12, 1.2, (x, y), base_z=z_bus - 1.3, sections=8), "insulator")
 
 
-def generate_scene(seed: int, family: str = "S", density: str = "mid") -> SceneModel:
+def generate_scene(seed: int, family: str = "S", density: str = "mid",
+                   n_temp: int = 0) -> SceneModel:
+    """n_temp: 竣工态临时占位物数量(BIM 中不存在)。
+
+    默认 0 → 竣工几何与 BIM 完全一致, 与既有 E2 基准逐比特兼容。E3 扫描该参数,
+    量化"BIM 与实景偏离"对遮挡感知规划的影响。
+    """
     # 注意：不能用内置 hash()——Python 对字符串的哈希每进程随机化(PYTHONHASHSEED)，
     # 会导致同一 (seed, family, density) 在不同进程生成完全不同的场景，实验不可复现。
     # 用 sha1 取稳定摘要（与 occlusion/sampling.py 的 _stable_seed 同一做法）。
@@ -204,6 +228,19 @@ def generate_scene(seed: int, family: str = "S", density: str = "mid") -> SceneM
         cy = float(rng.uniform(road_y - 4.5, road_y - 2.0))
         b.add(_box([float(rng.uniform(0.8, 2.0)), float(rng.uniform(0.8, 2.0)),
                     float(rng.uniform(0.8, 1.8))], [cx, cy, 0.6]), "clutter")
+
+    # 6. 竣工态临时占位物(车辆/料堆/脚手架), BIM 中不存在。
+    #    刻意放在道路与设备之间: 站点都架在道路附近, 只有挡在视线上才构成
+    #    真正的预测误差, 撒在空地上等于什么都没测。
+    for _ in range(n_temp):
+        north = bool(rng.integers(0, 2))
+        cx = float(rng.uniform(x_start - 2.0,
+                               x_start + (n_bay - 1) * bay_pitch + 2.0))
+        cy = (road_y + float(rng.uniform(2.5, 7.0)) if north
+              else road_y - float(rng.uniform(2.5, 6.5)))
+        hz = float(rng.uniform(1.6, 3.0))
+        b.add(_box([float(rng.uniform(1.6, 4.0)), float(rng.uniform(1.4, 2.6)), hz],
+                   [cx, cy, hz / 2]), "temp_obstacle", in_bim=False)
 
     vertices = np.vstack(b.verts)
     triangles = np.vstack(b.faces)
