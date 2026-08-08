@@ -1,0 +1,38 @@
+[ab] config_hash=2577f96083 commit=ca004d0
+[ab] scene_S_low/seed0: patches=526 gaps=64
+[ab]   tsp_first     awc=0.996 crit=0.958 len=113m (52.7s)
+[ab]   greedy_first  awc=0.988 crit=0.875 len=189m (48.3s)
+[ab]   j_step        awc=0.996 crit=0.958 len=113m (51.4s)
+[ab] scene_S_low/seed1: patches=486 gaps=41
+[ab]   tsp_first     awc=0.988 crit=1.000 len=151m (55.8s)
+[ab]   greedy_first  awc=0.988 crit=1.000 len=214m (50.9s)
+[ab]   j_step        awc=0.988 crit=1.000 len=151m (53.9s)
+[ab] scene_S_low/seed2: patches=522 gaps=48
+[ab]   tsp_first     awc=0.968 crit=0.900 len=130m (65.5s)
+[ab]   greedy_first  awc=0.975 crit=0.900 len=166m (58.1s)
+[ab]   j_step        awc=0.973 crit=0.900 len=144m (58.8s)
+[ab] scene_S_mid/seed0: patches=682 gaps=57
+[ab]   tsp_first     awc=0.999 crit=1.000 len=132m (59.2s)
+[ab]   greedy_first  awc=0.996 crit=0.975 len=218m (57.6s)
+[ab]   j_step        awc=0.999 crit=1.000 len=132m (79.5s)
+[ab] scene_S_mid/seed1: patches=654 gaps=61
+[ab]   tsp_first     awc=0.993 crit=0.955 len=186m (50.4s)
+[ab]   greedy_first  awc=0.997 crit=0.977 len=202m (47.2s)
+[ab]   j_step        awc=0.993 crit=0.955 len=186m (58.0s)
+[ab] scene_S_mid/seed2: patches=672 gaps=55
+[ab]   tsp_first     awc=0.985 crit=0.972 len=170m (80.7s)
+[ab]   greedy_first  awc=0.980 crit=0.833 len=210m (78.5s)
+[ab]   j_step        awc=0.985 crit=0.972 len=170m (99.3s)
+[ab] scene_M_mid/seed0: patches=846 gaps=91
+[ab]   tsp_first     awc=0.866 crit=0.957 len=129m (135.0s)
+[ab]   greedy_first  awc=0.984 crit=0.957 len=220m (135.0s)
+[ab]   j_step        awc=0.866 crit=0.957 len=129m (156.2s)
+[ab] scene_M_mid/seed1: patches=858 gaps=90
+[ab]   tsp_first     awc=0.874 crit=0.985 len=174m (145.3s)
+[ab]   greedy_first  awc=0.849 crit=0.971 len=290m (164.2s)
+[ab]   j_step        awc=0.941 crit=0.941 len=152m (160.3s)
+[ab] scene_M_mid/seed2: patches=864 gaps=83
+[ab]   tsp_first     awc=0.940 crit=0.871 len=185m (175.5s)
+[ab]   greedy_first  awc=0.956 crit=0.919 len=284m (169.3s)
+[ab]   j_step        awc=0.940 crit=0.871 len=185m (164.4s)
+[ab] summary → /home/xqin5/patent_gap_nbv/results/exec_policy_ab/summary.md

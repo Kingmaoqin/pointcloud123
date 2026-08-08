@@ -101,7 +101,9 @@ def score_candidates_v2(
             active = np.where(in_fov & (g > 0))[0]
             vis = np.zeros(J)
             if len(active):
-                vmap = oracle.visibility_batch(pos, sampler, [int(patch_ids[k]) for k in active])
+                vmap = oracle.visibility_batch(pos, sampler,
+                                               [int(patch_ids[k]) for k in active],
+                                               sensor=sensor)
                 for k in active:
                     vis[k] = vmap.get(int(patch_ids[k]), 0.0)
         else:

@@ -447,7 +447,9 @@ def _select_next_station(world: SimWorld, obs: ObsState, cfg: EpisodeConfig,
         return None
     pts_xy = [v0_xy] + [cs[k].position[:2] for k in sel]
     D = world.grid.distance_matrix(pts_xy)
-    route = solve_tsp(D, start=0, time_limit_s=3)   # 完整路线（预算核算与开环执行用）
+    # 仅 tsp_first 策略需要完整路线；其余策略下 route 会被丢弃，而 solve_tsp 的
+    # 时限搜索每轮要跑满 3 s（实测占单次 episode 用时的 26%），故按需调用。
+    route = solve_tsp(D, start=0, time_limit_s=3) if cfg.exec_policy == "tsp_first" else []
 
     # 本轮实际执行哪一站。公式(45)原定取 TSP 路线首站，但 TSP 是为"走完整条
     # 路线"排序的；闭环每轮只执行一站即重规划，取 TSP 首站等于系统性地挑最近
@@ -463,19 +465,21 @@ def _select_next_station(world: SimWorld, obs: ObsState, cfg: EpisodeConfig,
                 if node > 0:
                     return node - 1
             return None
-        # j_step：ΔJ(v) = ΔF(v)/F_ub + λ_reg·R_reg(v) − λ_len·dist(v0,v)/L_diag
-        # （公式(44) 中 λ_sta·M/M_max 一项对各候选相同，不影响取极大）
-        f_ub = float(gains.sum()) or 1.0
-        l_diag = world.scene.l_diag or 1.0
+        # j_step：公式(44) 的单步形式。
+        # 注意归一化基准：公式(44) 用 F_ub（全部表面分块的可达总收益）归一信息项、
+        # 用 L_diag（场景对角线）归一路径项，这在"整条轨迹"粒度上是配平的；但在
+        # 单步粒度上，一站只能拿到 F_ub 的百分之几，而一条腿却可达 L_diag 的三成，
+        # 距离项会比信息项大一到两个数量级，取极大即退化为"挑最近"（与 tsp_first
+        # 同解，实测 8 组配对中 6 组逐位相同）。故单步改用**步内 min-max 归一**：
+        # 两项都落在 [0,1]，λ_reg / λ_len 才在这一粒度上表达设计意图。
         op = ObjectiveParams()
-        best_k, best_j = None, -np.inf
-        for k_local, k in enumerate(sel):
-            dF = float((uncov_now * c_jv[:, k]).sum())
-            j = (dF / f_ub + op.lambda_reg * cs[k].r_reg
-                 - op.lambda_len * float(D[0, k_local + 1]) / l_diag)
-            if j > best_j:
-                best_k, best_j = k_local, j
-        return best_k
+        dF = np.array([float((uncov_now * c_jv[:, k]).sum()) for k in sel])
+        dist = np.array([float(D[0, i + 1]) for i in range(len(sel))])
+        f_scale = float(dF.max()) or 1.0
+        d_scale = float(dist.max()) or 1.0
+        rr = np.array([cs[k].r_reg for k in sel])
+        j = dF / f_scale + op.lambda_reg * rr - op.lambda_len * dist / d_scale
+        return int(np.argmax(j))
 
     k_local = _pick()
     if k_local is None:

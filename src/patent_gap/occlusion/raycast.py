@@ -50,7 +50,7 @@ class OcclusionOracle:
 
     def visibility_batch(self, origin: np.ndarray, sampler: PatchSampler,
                          patch_ids: list[int] | np.ndarray | None = None,
-                         eps: float = 0.01) -> dict[int, float]:
+                         eps: float = 0.01, sensor=None) -> dict[int, float]:
         """一个候选站对全部目标 Patch 的采样点拼成单次 cast_rays(批量化)。"""
         if patch_ids is None:
             patch_ids = sampler.patch_ids()
@@ -70,7 +70,13 @@ class OcclusionOracle:
         dist = np.linalg.norm(d, axis=1)
         dist_safe = np.where(dist > 1e-9, dist, 1.0)
         t_hit, hit_patch = self.first_hits(origin, d / dist_safe[:, None])
-        ok = (hit_patch == owner) & (t_hit >= dist - eps)
+        # 量程门必须与实际观测口径一致：station_sample_masks 会按 [r_min, r_max]
+        # 过滤，若此处不过滤，则对跨越 r_max 的大 Patch，预测可见率会系统性高于
+        # 实际可测得的覆盖（S 族对角线 54 m 不触发，M/L 族 72/90 m 会触发）。
+        rng_ok = np.ones(len(dist), dtype=bool)
+        if sensor is not None:
+            rng_ok = (dist >= sensor.r_min) & (dist <= sensor.r_max)
+        ok = (hit_patch == owner) & (t_hit >= dist - eps) & rng_ok
         out: dict[int, float] = {}
         pos = 0
         for pid, c in zip(patch_ids, counts):

@@ -66,4 +66,12 @@ def lazy_greedy(c_jv: np.ndarray, gains_j: np.ndarray, cost_v: np.ndarray,
         S.append(v)
         spent += float(cost_v[v])
         uncov *= (1.0 - c_jv[:, v])
+
+    # Khuller-Moss-Naor 修正：与"预算内单点最优"取大，恢复 (1−1/e)/2 保证。
+    affordable = [v for v in range(V) if feasible[v] and cost_v[v] <= budget]
+    if affordable:
+        best_single = max(affordable,
+                          key=lambda v: float((gains_j * c_jv[:, v]).sum()))
+        if coverage_value(c_jv, gains_j, [best_single]) > coverage_value(c_jv, gains_j, S):
+            return [best_single]
     return S

@@ -6,7 +6,13 @@ import numpy as np
 
 
 def paired_permutation(x: np.ndarray, y: np.ndarray, n: int = 10000, seed: int = 0) -> float:
-    """双侧配对置换检验 p 值。"""
+    """双侧配对置换检验 p 值。
+
+    配对数 m ≤ 12 时穷举 2^m 种符号组合给出精确 p；否则用 n 次蒙特卡洛并施加
+    Phipson–Smyth 的 (1+B)/(1+n) 修正，使 p 恒 > 0。
+    注意分辨率下限：m 对样本的最小可能 p 为 2/2^m（m=9 时为 0.0039），
+    Holm 校正 k 个检验后为 k·2/2^m —— 报告显著性时须说明这一下限。
+    """
     x = np.asarray(x, dtype=float)
     y = np.asarray(y, dtype=float)
     ok = np.isfinite(x) & np.isfinite(y)
@@ -15,9 +21,16 @@ def paired_permutation(x: np.ndarray, y: np.ndarray, n: int = 10000, seed: int =
         return float("nan")
     rng = np.random.default_rng(seed)
     t0 = d.mean()
+    # 精确检验：配对数少时穷举全部符号组合，避免蒙特卡洛噪声与分辨率地板不明
+    if len(d) <= 12:
+        from itertools import product
+        ts = np.array([np.mean(d * np.array(sgn))
+                       for sgn in product((1.0, -1.0), repeat=len(d))])
+        return float((np.abs(ts) >= abs(t0) - 1e-15).mean())
     signs = rng.choice([1.0, -1.0], size=(n, len(d)))
     ts = (signs * d[None, :]).mean(axis=1)
-    return float((np.abs(ts) >= abs(t0)).mean())
+    # Phipson–Smyth 修正：蒙特卡洛置换检验的 p 不应为 0（否则 Holm 会输出 0.0000）
+    return float((1 + int((np.abs(ts) >= abs(t0)).sum())) / (n + 1))
 
 
 def holm(pvals) -> np.ndarray:

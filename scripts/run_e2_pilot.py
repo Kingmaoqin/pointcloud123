@@ -34,8 +34,11 @@ METHODS = ["B0_random", "B1_patent", "B5_occ_rng", "B10_full"]
 
 def git_commit() -> str:
     try:
-        return subprocess.check_output(["git", "rev-parse", "--short", "HEAD"],
-                                       cwd=ROOT, text=True).strip()
+        # 必须带 --dirty：脏工作树跑出的结果若只记 HEAD，会被盖上一个"该代码
+        # 当时并不存在"的 commit 戳（E2 pilot 即因此标成了 7a91f13）。
+        return subprocess.check_output(
+            ["git", "describe", "--always", "--dirty", "--abbrev=7"],
+            cwd=ROOT, text=True).strip()
     except Exception:
         return "unknown"
 

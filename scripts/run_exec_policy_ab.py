@@ -6,8 +6,10 @@
 
   tsp_first     公式(45) 原定：TSP 路线首站
   greedy_first  懒惰贪心的首选（边际增益/成本最大者）
-  j_step        单步 J 最大者：ΔF/F_ub + λ_reg·R_reg − λ_len·dist/L_diag
-                （公式(44) 的单步形式；λ_sta 项对各候选相同，不影响取极大）
+  j_step        单步 J 最大者（公式(44) 的单步形式）。信息项与路径项按**步内
+                min-max** 归一后再加权：ΔF/max ΔF + λ_reg·R_reg − λ_len·dist/max dist。
+                若沿用公式(44) 的 F_ub / L_diag 归一，单步下距离项会比信息项大
+                一到两个数量级，取极大即退化为"挑最近"，与 tsp_first 同解。
 
 输出：results/exec_policy_ab/{policy}/{scene}/{seed}/run.json 与 summary.md
 """
@@ -37,14 +39,19 @@ from patent_gap.simulation.scene_gen import generate_scene  # noqa: E402
 
 POLICIES = ["tsp_first", "greedy_first", "j_step"]
 SCENES = [("S", "low"), ("S", "mid"), ("M", "mid")]
-SEEDS = [0, 1, 2]
+# 策略选择必须在与 E2 基准（seed 0,1,2）不相交的场景上做，否则等于在评测集上
+# 调参，会系统性抬高后续报告中的优势。
+SEEDS = [10, 11, 12, 13, 14]
 METRICS = ["awc_gap_recovery", "crit_recall", "dens_ok", "path_len_m", "ig_per_m"]
 
 
 def git_commit() -> str:
     try:
-        return subprocess.check_output(["git", "rev-parse", "--short", "HEAD"],
-                                       cwd=ROOT, text=True).strip()
+        # 必须带 --dirty：脏工作树跑出的结果若只记 HEAD，会被盖上一个"该代码
+        # 当时并不存在"的 commit 戳（E2 pilot 即因此标成了 7a91f13）。
+        return subprocess.check_output(
+            ["git", "describe", "--always", "--dirty", "--abbrev=7"],
+            cwd=ROOT, text=True).strip()
     except Exception:
         return "unknown"
 
