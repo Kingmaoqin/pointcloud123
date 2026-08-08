@@ -1,0 +1,87 @@
+{
+ "method": "B10_full",
+ "seed": 11,
+ "history": [
+  {
+   "awc_gap_recovery": 0.0,
+   "asset_recovery": 0.0,
+   "dens_ok": 0.2730496453900709,
+   "crit_recall": 0.0,
+   "path_len_m": 0.0,
+   "n_stations": 0,
+   "ig_per_m": 0.0
+  },
+  {
+   "awc_gap_recovery": 0.5019260985565754,
+   "asset_recovery": 0.04904556060095313,
+   "dens_ok": 0.2777777777777778,
+   "crit_recall": 0.02531645569620253,
+   "path_len_m": 46.266504294495505,
+   "n_stations": 1,
+   "ig_per_m": 0.01084858487171877
+  },
+  {
+   "awc_gap_recovery": 0.6787483199801723,
+   "asset_recovery": 0.6235349929441545,
+   "dens_ok": 0.40543735224586286,
+   "crit_recall": 0.4936708860759494,
+   "path_len_m": 111.32285348059956,
+   "n_stations": 2,
+   "ig_per_m": 0.0060971157202546825
+  },
+  {
+   "awc_gap_recovery": 0.8406833549869327,
+   "asset_recovery": 0.8250909621186583,
+   "dens_ok": 0.47044917257683216,
+   "crit_recall": 0.8734177215189873,
+   "path_len_m": 137.06549416771884,
+   "n_stations": 3,
+   "ig_per_m": 0.006133442702641402
+  },
+  {
+   "awc_gap_recovery": 0.8575638401815577,
+   "asset_recovery": 0.9190311243904636,
+   "dens_ok": 0.5295508274231678,
+   "crit_recall": 0.9620253164556962,
+   "path_len_m": 188.33326112068522,
+   "n_stations": 4,
+   "ig_per_m": 0.004553438065472806
+  },
+  {
+   "awc_gap_recovery": 0.918989313846568,
+   "asset_recovery": 0.9211862968042568,
+   "dens_ok": 0.5307328605200946,
+   "crit_recall": 0.9620253164556962,
+   "path_len_m": 254.97844507162114,
+   "n_stations": 5,
+   "ig_per_m": 0.003604184320711628
+  },
+  {
+   "awc_gap_recovery": 0.9632109320532123,
+   "asset_recovery": 0.9316556795131845,
+   "dens_ok": 0.5910165484633569,
+   "crit_recall": 0.9873417721518988,
+   "path_len_m": 272.44595949289334,
+   "n_stations": 6,
+   "ig_per_m": 0.0035354201392674253
+  }
+ ],
+ "final": {
+  "awc_gap_recovery": 0.9632109320532123,
+  "asset_recovery": 0.9316556795131845,
+  "dens_ok": 0.5910165484633569,
+  "crit_recall": 0.9873417721518988,
+  "path_len_m": 272.44595949289334,
+  "n_stations": 6,
+  "ig_per_m": 0.0035354201392674253
+ },
+ "registration": [],
+ "status": "ok",
+ "level": "cancel_1.0",
+ "lambda_e_value": 1.0,
+ "scene": "scene_M_mid",
+ "scene_seed": 11,
+ "config_hash": "0f59bfca99",
+ "git_commit": "9ef9151",
+ "runtime_s": 127.7
+}

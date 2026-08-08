@@ -1,0 +1,47 @@
+[lam] config_hash=0f59bfca99 commit=9ef9151
+[lam] scene_S_low/seed10: patches=486 gaps=56
+[lam]   cancel_1.0     crit=0.952 awc=0.990 (30.2s)
+[lam]   decoupled_0.0  crit=0.952 awc=0.990 (31.6s)
+[lam] scene_S_low/seed11: patches=540 gaps=50
+[lam]   cancel_1.0     crit=0.871 awc=0.988 (38.1s)
+[lam]   decoupled_0.0  crit=0.871 awc=0.988 (35.4s)
+[lam] scene_S_low/seed12: patches=492 gaps=46
+[lam]   cancel_1.0     crit=0.967 awc=0.997 (25.8s)
+[lam]   decoupled_0.0  crit=0.967 awc=0.997 (32.0s)
+[lam] scene_S_low/seed13: patches=478 gaps=49
+[lam]   cancel_1.0     crit=0.882 awc=0.990 (36.5s)
+[lam]   decoupled_0.0  crit=0.882 awc=0.990 (39.6s)
+[lam] scene_S_low/seed14: patches=546 gaps=52
+[lam]   cancel_1.0     crit=0.939 awc=0.984 (47.3s)
+[lam]   decoupled_0.0  crit=0.939 awc=0.984 (36.6s)
+[lam] scene_S_mid/seed10: patches=684 gaps=66
+[lam]   cancel_1.0     crit=0.938 awc=0.979 (38.4s)
+[lam]   decoupled_0.0  crit=0.938 awc=0.979 (41.2s)
+[lam] scene_S_mid/seed11: patches=666 gaps=63
+[lam]   cancel_1.0     crit=0.778 awc=0.969 (31.9s)
+[lam]   decoupled_0.0  crit=0.778 awc=0.969 (31.4s)
+[lam] scene_S_mid/seed12: patches=708 gaps=71
+[lam]   cancel_1.0     crit=0.885 awc=0.976 (45.8s)
+[lam]   decoupled_0.0  crit=0.885 awc=0.976 (50.5s)
+[lam] scene_S_mid/seed13: patches=654 gaps=56
+[lam]   cancel_1.0     crit=0.974 awc=0.997 (46.3s)
+[lam]   decoupled_0.0  crit=0.974 awc=0.996 (38.1s)
+[lam] scene_S_mid/seed14: patches=666 gaps=56
+[lam]   cancel_1.0     crit=0.868 awc=0.912 (43.3s)
+[lam]   decoupled_0.0  crit=0.868 awc=0.912 (40.0s)
+[lam] scene_M_mid/seed10: patches=852 gaps=108
+[lam]   cancel_1.0     crit=0.944 awc=0.843 (124.3s)
+[lam]   decoupled_0.0  crit=0.944 awc=0.837 (147.3s)
+[lam] scene_M_mid/seed11: patches=846 gaps=97
+[lam]   cancel_1.0     crit=0.987 awc=0.963 (127.7s)
+[lam]   decoupled_0.0  crit=0.949 awc=0.919 (125.1s)
+[lam] scene_M_mid/seed12: patches=846 gaps=76
+[lam]   cancel_1.0     crit=0.909 awc=0.988 (128.9s)
+[lam]   decoupled_0.0  crit=0.945 awc=0.785 (143.3s)
+[lam] scene_M_mid/seed13: patches=858 gaps=136
+[lam]   cancel_1.0     crit=0.983 awc=0.973 (90.4s)
+[lam]   decoupled_0.0  crit=0.983 awc=0.979 (98.1s)
+[lam] scene_M_mid/seed14: patches=894 gaps=115
+[lam]   cancel_1.0     crit=0.978 awc=0.960 (99.6s)
+[lam]   decoupled_0.0  crit=0.989 awc=0.874 (102.4s)
+[lam] summary → /home/xqin5/patent_gap_nbv/results/lambda_e_ab/summary.md

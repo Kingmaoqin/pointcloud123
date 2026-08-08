@@ -427,9 +427,10 @@ class EpisodeConfig:
     rounds_max: int = 6
     rho0: float = 400.0
     lambda_e: float = 1.0
-    # 见 V2Config.lambda_e_value: 价值通路的 ρ_req 重要度系数。取 1.0 复现
-    # 升级前行为(重要度在未饱和区被整除掉), 取 0.0 让重要度真正生效。
-    lambda_e_value: float = 0.0
+    # 见 V2Config.lambda_e_value: 价值通路的 ρ_req 重要度系数。取 1.0 时它与
+    # G_task 的 (1+E) 在未饱和区精确抵消; 取 0.0 解除抵消。A/B 不支持改默认,
+    # 保持 1.0, 见 results/lambda_e_ab/summary.md。
+    lambda_e_value: float = 1.0
     seed: int = 0
     method: str = "B10_full"
     # 是否用已测点云在线发现 BIM 未建模的遮挡物并修正规划遮挡模型(见
