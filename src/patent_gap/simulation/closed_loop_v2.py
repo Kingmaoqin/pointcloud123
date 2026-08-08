@@ -116,7 +116,7 @@ class ObsState:
             self.scans.pop()
             self.masks.pop()
 
-    def registration_of_last(self, o_min: float, tau_cov: float) -> tuple[float, int, float]:
+    def registration_of_last(self) -> tuple[float, int, float]:
         """新站相对既有站集的**实际**重叠率、重叠点数与重叠区退化度。
 
         与 score_candidates_v2 里对候选做的预测同构, 区别是这里用真正测到的
@@ -145,9 +145,10 @@ class ObsState:
             k = idx.get(int(pid))
             if k is not None and both.any():
                 sm = self.world.sampler.samples(int(pid))
-                if len(sm) == len(both):
-                    pts.append(sm[both])
-                    nrms.append(np.tile(nrm_all[k], (int(both.sum()), 1)))
+                # 掩码由 station_sample_masks 按同一 sampler 切片得到, 长度必然一致
+                assert len(sm) == len(both), f"patch {pid}: 采样点与掩码长度不一致"
+                pts.append(sm[both])
+                nrms.append(np.tile(nrm_all[k], (int(both.sum()), 1)))
         if n_new == 0:
             return 0.0, 0, 1.0
         dg = degeneracy(np.vstack(pts), np.vstack(nrms)) if pts else 1.0
@@ -449,11 +450,18 @@ class EpisodeConfig:
 
 def _select_next_station(world: SimWorld, obs: ObsState, cfg: EpisodeConfig,
                          v0_xy, rng, budget_left: float,
-                         plan_oracle=None) -> tuple[np.ndarray, float] | None:
+                         plan_oracle=None,
+                         failed_xy: list | None = None) -> tuple[np.ndarray, float] | None:
     """一轮选站(方法分派), 返回 (下一站原点, A*距离) 或 None。
 
     plan_oracle 为规划器可用的遮挡模型; 缺省即设计 BIM。B11_disc 会传入被
     已发现的未建模遮挡物增量修正过的版本。
+
+    failed_xy 为配准失败而被丢弃的站位。它们必须与已执行站一样进入去重集:
+    失败站已从 obs.scans 弹出, 若不另行记住, 规划器看到的就是"这里没人去过"
+    且 A* 距离为 0(机器人就站在那儿), 成本必然最低而被反复重选 —— 实测会在
+    同一点空转满全部轮次, awc 归零。"这里配准不上"正是配准感知规划该拿到的
+    信号。
     """
     method = cfg.method
     plan_oracle = plan_oracle if plan_oracle is not None else world.plan_oracle
@@ -472,7 +480,8 @@ def _select_next_station(world: SimWorld, obs: ObsState, cfg: EpisodeConfig,
         # 取"离已执行站最远"(max-min 离散度)。用于检验公式(26)-(45) 相对一个
         # 无信息启发式是否真有优势 —— 若无, 整套机制的收益主张不成立。
         free_cells = np.argwhere(world.grid._compute_free())
-        done = np.array([s.origin[:2] for s in obs.scans], dtype=float)
+        done = np.array([s.origin[:2] for s in obs.scans] + list(failed_xy or []),
+                        dtype=float)
         best, best_d, best_score = None, None, -np.inf
         idx = rng.permutation(len(free_cells))[:400]   # 固定预算, 与 B0 同量级
         for t in idx:
@@ -493,7 +502,8 @@ def _select_next_station(world: SimWorld, obs: ObsState, cfg: EpisodeConfig,
     scores = compute_scores(obs, extended=extended, rho0=cfg.rho0, lambda_e=cfg.lambda_e)
     scores = scores.sort_values("patch_id").reset_index(drop=True)
     cand = _make_candidates(world, scores, v0_xy, rng,
-                            executed_xy=[s.origin[:2] for s in obs.scans])
+                            executed_xy=([s.origin[:2] for s in obs.scans]
+                                         + list(failed_xy or [])))
     if cand.empty:
         return None
 
@@ -613,6 +623,7 @@ def run_episode(world: SimWorld, init_origins: list[np.ndarray],
     # 未建模遮挡物在线发现: 初始站的点云先并入, 首轮选站就能用上
     disc = None
     reg_log: list[dict] = []
+    failed_xy: list[np.ndarray] = []
     plan_oracle = world.plan_oracle
     if cfg.discover_occluders or cfg.method == "B11_disc":
         bim = world.scene.bim_tri_mask()
@@ -632,19 +643,20 @@ def run_episode(world: SimWorld, init_origins: list[np.ndarray],
             break
         res = _select_next_station(world, obs, cfg, v0_xy, rng,
                                    budget_left=cfg.length_max_m - path_len,
-                                   plan_oracle=plan_oracle)
+                                   plan_oracle=plan_oracle, failed_xy=failed_xy)
         if res is None:
             break
         origin, d = res
         scan = obs.add_station(origin, f"{cfg.method}_r{rnd}", seed=cfg.seed * 100 + 50 + rnd)
         if cfg.registration_realism:
-            ov, n_ovl, dg = obs.registration_of_last(V2Config().o_min, V2Config().tau_cov)
+            ov, n_ovl, dg = obs.registration_of_last()
             ok_reg, err = register_station(ov, n_ovl, dg, world.sensor.sigma_r, rng,
                                            o_min=V2Config().o_min, tol_m=cfg.reg_tol_m)
             reg_log.append({"round": rnd, "overlap": ov, "n_overlap": int(n_ovl),
                             "degen": dg, "pose_err_m": err, "accepted": bool(ok_reg)})
             if not ok_reg:
                 obs.drop_last_station()   # 拼不进全局系, 数据作废; 路程与时间照付
+                failed_xy.append(np.asarray(origin[:2], dtype=float))
                 scan = None
         if scan is not None and disc is not None and disc.update(scan.points) > 0:
             plan_oracle = disc.build_oracle()   # 只在真有新发现时重建 BVH

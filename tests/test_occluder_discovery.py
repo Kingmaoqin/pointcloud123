@@ -114,3 +114,43 @@ def test_registration_realism_penalises_ill_conditioned_overlap():
     off = run_episode(world, init, base, gt=gt)
     assert off["registration"] == []
     assert "n_reg_failed" not in off["final"]
+
+
+def test_failed_registration_does_not_trap_the_planner():
+    """配准失败的站必须进入去重集, 否则规划器在原地空转。
+
+    失败站会从 obs.scans 弹出。若不另行记住, 规划器看到"这里没人去过"且 A*
+    距离为 0(机器人就站在那儿), 成本必然最低 → 每轮重选同一点。实测该缺陷
+    会让全部轮次停在一个位置、awc 归零。
+    """
+    import numpy as np
+
+    import patent_gap.simulation.closed_loop_v2 as cl
+
+    _, world = _world(n_temp=0)
+    init = default_init_stations(world, n=3)
+    probe = ObsState(world=world)
+    for k, o in enumerate(init):
+        probe.add_station(o, f"i{k}", seed=k)
+    gt = build_ground_truth(world, list(probe.masks))
+
+    picks: list[tuple] = []
+    original = cl.ObsState.add_station
+
+    def spy(self, origin, station_id, seed=0):
+        if station_id.startswith("B10"):
+            picks.append(tuple(np.round(origin[:2], 2)))
+        return original(self, origin, station_id, seed=seed)
+
+    cl.ObsState.add_station = spy
+    try:
+        res = cl.run_episode(world, init, cl.EpisodeConfig(
+            stations_max=6, length_max_m=400.0, rounds_max=6, rho0=50.0,
+            seed=0, method="B10_full", registration_realism=True), gt=gt)
+    finally:
+        cl.ObsState.add_station = original
+
+    # 该场景种子下首轮必失败(重叠 0.295 < O_min 0.30), 正是要覆盖的分支
+    assert res["registration"] and not res["registration"][0]["accepted"]
+    assert len(set(picks)) == len(picks), f"重复选中同一站位: {picks}"
+    assert res["final"]["awc_gap_recovery"] > 0.5
