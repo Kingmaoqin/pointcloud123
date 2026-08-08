@@ -1,5 +1,8 @@
 """PR8 验收: 场景生成器 / Fallback 仿真器 / 闭环冒烟(公式45)。"""
 
+import os
+from pathlib import Path
+
 import numpy as np
 import pytest
 
@@ -80,3 +83,35 @@ def test_closed_loop_smoke():
     awc = [m["awc_gap_recovery"] for m in h]
     assert awc[-1] >= awc[0] - 1e-9
     assert h[-1]["n_stations"] >= 1
+
+
+def test_scene_generation_reproducible_across_processes():
+    """同一 (seed, family, density) 在不同进程必须生成同一场景。
+
+    曾用内置 hash(family+density) 播种，而 Python 的字符串哈希每进程随机化
+    (PYTHONHASHSEED)，导致同一 seed 在每次运行中生成完全不同的场景——E2 基准
+    的全部结果因此无法复现。此测试在子进程中重新生成并比对几何指纹。
+    """
+    import hashlib
+    import subprocess
+    import sys
+    import textwrap
+
+    code = textwrap.dedent("""
+        import hashlib, sys
+        import numpy as np
+        from patent_gap.simulation.scene_gen import generate_scene
+        s = generate_scene(seed=2, family='S', density='low')
+        print(hashlib.md5(np.ascontiguousarray(s.vertices).tobytes()).hexdigest())
+    """)
+    here = generate_scene(seed=2, family="S", density="low")
+    mine = hashlib.md5(np.ascontiguousarray(here.vertices).tobytes()).hexdigest()
+    seen = set()
+    for salt in ("0", "1", "random"):          # 显式改变 PYTHONHASHSEED
+        env = {**os.environ, "PYTHONHASHSEED": salt,
+               "PYTHONPATH": str(Path(__file__).resolve().parents[1] / "src")}
+        r = subprocess.run([sys.executable, "-c", code], capture_output=True,
+                           text=True, env=env, timeout=300)
+        assert r.returncode == 0, r.stderr[-500:]
+        seen.add(r.stdout.strip())
+    assert seen == {mine}, f"场景随进程而变: 本进程 {mine}, 子进程 {seen}"

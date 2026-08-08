@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -158,7 +159,11 @@ def _gantry_with_busbar(b: _Builder, x0, x1, y, rng) -> None:
 
 
 def generate_scene(seed: int, family: str = "S", density: str = "mid") -> SceneModel:
-    rng = np.random.default_rng(seed * 1000 + hash(family + density) % 997)
+    # 注意：不能用内置 hash()——Python 对字符串的哈希每进程随机化(PYTHONHASHSEED)，
+    # 会导致同一 (seed, family, density) 在不同进程生成完全不同的场景，实验不可复现。
+    # 用 sha1 取稳定摘要（与 occlusion/sampling.py 的 _stable_seed 同一做法）。
+    tag = int(hashlib.sha1(f"{family}_{density}".encode()).hexdigest()[:8], 16)
+    rng = np.random.default_rng(seed * 1000 + tag % 997)
     W, D, n_bay_base = SIZE_TABLE[family]
     n_bay = max(1, int(round(n_bay_base * DENSITY_TABLE[density])))
     b = _Builder()

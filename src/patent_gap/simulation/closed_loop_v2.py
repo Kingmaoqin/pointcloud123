@@ -17,6 +17,7 @@ from ..io.station_npz import StationScan
 from ..mapping.traversability import TravGrid
 from ..occlusion.raycast import OcclusionOracle
 from ..occlusion.sampling import PatchSampler
+from ..planning.objective import ObjectiveParams
 from ..planning.route import solve_tsp
 from ..planning.set_select import lazy_greedy
 from ..registration.predictor import degeneracy, expected_overlap, r_reg, split_regions
@@ -362,6 +363,11 @@ class EpisodeConfig:
     lambda_e: float = 1.0
     seed: int = 0
     method: str = "B10_full"
+    # 闭环中"本轮执行哪一站"的策略（见 docs/闭环执行策略升级.md）：
+    #   "tsp_first"    公式(45)原定：执行 TSP 路线首站（为走完整条路线而排序）
+    #   "greedy_first" 执行懒惰贪心的首选（性价比最高者）
+    #   "j_step"       执行使单步 J 增量最大者（公式(44) 的单步形式）
+    exec_policy: str = "j_step"
 
 
 def _select_next_station(world: SimWorld, obs: ObsState, cfg: EpisodeConfig,
@@ -436,22 +442,49 @@ def _select_next_station(world: SimWorld, obs: ObsState, cfg: EpisodeConfig,
     sel = lazy_greedy(c_jv, gains, cost,
                       budget=budget_left + max(n_left, 1) * scan_equiv,
                       max_stations=max(n_left, 1))
+    uncov_now = gains.copy()          # 单步 ΔF 用：当前尚未覆盖的期望收益
     if not sel:
         return None
     pts_xy = [v0_xy] + [cs[k].position[:2] for k in sel]
     D = world.grid.distance_matrix(pts_xy)
-    route = solve_tsp(D, start=0, time_limit_s=3)
-    nxt = None
-    for node in route[1:]:
-        if node > 0:
-            nxt = sel[node - 1]
-            d_first = D[0, node]
-            break
-    if nxt is None:
+    route = solve_tsp(D, start=0, time_limit_s=3)   # 完整路线（预算核算与开环执行用）
+
+    # 本轮实际执行哪一站。公式(45)原定取 TSP 路线首站，但 TSP 是为"走完整条
+    # 路线"排序的；闭环每轮只执行一站即重规划，取 TSP 首站等于系统性地挑最近
+    # 而非最有价值的站。实测（docs/闭环执行策略升级.md）：在 B10 表现最差的场景中，
+    # TSP 首站每轮的边际增益仅为贪心首选的 1/5～1/2。故默认改为单步 J 最大。
+    def _pick() -> int | None:
+        if not sel:
+            return None
+        if cfg.exec_policy == "greedy_first":
+            return 0
+        if cfg.exec_policy == "tsp_first":
+            for node in route[1:]:
+                if node > 0:
+                    return node - 1
+            return None
+        # j_step：ΔJ(v) = ΔF(v)/F_ub + λ_reg·R_reg(v) − λ_len·dist(v0,v)/L_diag
+        # （公式(44) 中 λ_sta·M/M_max 一项对各候选相同，不影响取极大）
+        f_ub = float(gains.sum()) or 1.0
+        l_diag = world.scene.l_diag or 1.0
+        op = ObjectiveParams()
+        best_k, best_j = None, -np.inf
+        for k_local, k in enumerate(sel):
+            dF = float((uncov_now * c_jv[:, k]).sum())
+            j = (dF / f_ub + op.lambda_reg * cs[k].r_reg
+                 - op.lambda_len * float(D[0, k_local + 1]) / l_diag)
+            if j > best_j:
+                best_k, best_j = k_local, j
+        return best_k
+
+    k_local = _pick()
+    if k_local is None:
         return None
+    nxt = sel[k_local]
+    d_first = float(D[0, k_local + 1])
     if d_first > budget_left:
         return None
-    return np.asarray(cs[nxt].position, dtype=float), float(d_first)
+    return np.asarray(cs[nxt].position, dtype=float), d_first
 
 
 def run_episode(world: SimWorld, init_origins: list[np.ndarray],
