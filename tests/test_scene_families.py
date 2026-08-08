@@ -46,3 +46,56 @@ def test_every_scene_family_runs(family, density):
     for key in ("awc_gap_recovery", "asset_recovery", "crit_recall", "dens_ok"):
         v = fin[key]
         assert np.isfinite(v) and 0.0 <= v <= 1.0, f"{family}/{density}: {key}={v}"
+
+
+@pytest.mark.parametrize("family,density", [("S", "high"), ("M", "high"),
+                                            ("L", "mid"), ("L", "high")])
+def test_equipment_stays_inside_the_site(family, density):
+    """间隔排必须放得进场地。
+
+    bay_pitch 原先只从 U(9,14) 抽而不与场地宽度 W 约束, 于是 L/high(n_bay=8,
+    上限 8.9 m) 20 个种子里 16 个、M/high(上限 9.2 m) 15 个把设备摆到围栏外,
+    最远 14 m —— 那里没有可通行格, 永远扫不到, 等于给 awc 压一个人为天花板,
+    而 E5 用种子 0/1/2 恰好躲开了 L/high。扩种子是统计功效所必需的, 所以这条
+    必须在扩样本之前锁住。
+    """
+    for seed in range(20):
+        scene = generate_scene(seed=seed, family=family, density=density)
+        xmin, ymin, xmax, ymax = scene.bounds_xy
+        for c in scene.components:
+            if c.cls == "ground":
+                continue
+            over = max(xmin - c.bbox_min[0], c.bbox_max[0] - xmax,
+                       ymin - c.bbox_min[1], c.bbox_max[1] - ymax)
+            assert over <= 0.5, (f"{family}/{density} seed{seed}: {c.cls} "
+                                 f"越出场地 {over:.2f} m")
+
+
+def test_every_component_can_be_targeted():
+    """候选目标集必须覆盖全部构件, 否则整类设备永远没有为它生成的视点。
+
+    原先目标集固定截断到 60 行, 而排序键 G_task·A 里 G_task 只跨 1.0-1.3、
+    Patch 面积跨约 200 倍, 重要度抬不过面积。实测即使在最小的 S/low 上,
+    隔离开关/CT-PT/避雷器/绝缘子四类**一个候选都没有**, 其中两类计入
+    crit_recall —— 那些指标于是主要反映候选生成而非规划。
+    """
+    import numpy as np
+    import patent_gap.simulation.closed_loop_v2 as cl
+
+    for family, density in (("S", "low"), ("L", "high")):
+        scene = generate_scene(seed=0, family=family, density=density)
+        world = SimWorld.build(scene, SensorModel.from_config(SENSOR), sim_dtheta_deg=0.8)
+        obs = ObsState(world=world)
+        for k, o in enumerate(default_init_stations(world, n=3)):
+            obs.add_station(o, f"i{k}", seed=k)
+        s = cl.compute_scores(obs, extended=True, rho0=50.0)
+        s = s.copy()
+        s["_gain"] = s["G_task"] * s["area"]
+        s = s.sort_values("_gain", ascending=False)
+        n = int(np.clip(2 * s["element_guid"].nunique(), 60, 400))
+        tgt = s.groupby("element_guid", sort=False).head(2).head(n)
+
+        assert tgt["element_guid"].nunique() == world.patches["element_guid"].nunique()
+        classes = set(world.patches["ifc_class"]) - {"ground"}
+        missing = classes - set(tgt["ifc_class"])
+        assert not missing, f"{family}/{density}: 这些类没有任何候选目标 {sorted(missing)}"

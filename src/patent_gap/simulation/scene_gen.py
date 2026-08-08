@@ -197,7 +197,14 @@ def generate_scene(seed: int, family: str = "S", density: str = "mid",
     road_y = 0.0
 
     # 2. 间隔沿道路北侧
-    bay_pitch = float(rng.uniform(9.0, 14.0))
+    # 间隔间距必须与场地宽度相容: 间隔排总长 (n_bay−1)·pitch 加两侧各 6 m 余量
+    # 不得超过 W。原先只从 U(9,14) 抽而不做约束, 于是 L/high(n_bay=8, 上限
+    # 8.9 m) 有 16/20 个种子、M/high(上限 9.2 m) 有 15/20 个种子把设备摆到围栏
+    # 外, 最远 14 m —— 那里没有可通行格, 永远扫不到, 等于给 awc 压一个人为
+    # 天花板。抽样次数不变, 故不影响 pitch 上限本就宽裕的场景(S/low、S/mid、
+    # M/mid、M/low、L/low)的既有结果。
+    pitch_max = (W - 12.0) / max(n_bay - 1, 1)
+    bay_pitch = float(min(rng.uniform(9.0, 14.0), pitch_max))
     x_start = -(n_bay - 1) * bay_pitch / 2
     bay_y = road_y + 10.0
     for k in range(n_bay):

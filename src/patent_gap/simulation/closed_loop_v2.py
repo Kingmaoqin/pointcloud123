@@ -379,11 +379,20 @@ def _make_candidates(world: SimWorld, scores: pd.DataFrame, v0_xy, rng,
     目标 Patch 按 G_task·A 排序并做构件级去重(每构件≤2), 避免候选池
     坍缩到单一高遮挡簇; 另按 2.0 节"候选点集改为可通行图节点约束"补充
     可通行网格节点候选(空间多样性, 供公式(42)集合选择淘汰)。
+
+    目标集容量随构件数缩放, 不再固定 60 行。固定 60 时排序键 G_task·A 里
+    G_task 只跨 1.0–1.3 而 Patch 面积跨约 200 倍, 重要度永远抬不过面积, 于是
+    截断处的面积下限正好卡在断路器尺寸上 —— 实测即使在最小的 S/low 上,
+    隔离开关 0/144、CT/PT 0/72、避雷器 0/72、绝缘子 0/20 **从未有过一个为它们
+    生成的候选视点**(L/high 为 0/576、0/288、0/288、0/40), 而隔离开关与 CT/PT
+    的 E_i=0.8 是计入 crit_recall 的。取每构件 2 个的容量即可让全部构件进入
+    目标集。
     """
     s = scores.copy()
     s["_gain"] = pd.to_numeric(s["G_task"], errors="coerce").fillna(0) * s["area"]
     s = s.sort_values("_gain", ascending=False)
-    s = s.groupby("element_guid", sort=False).head(2).head(60)
+    n_targets = int(np.clip(2 * s["element_guid"].nunique(), 60, 400))
+    s = s.groupby("element_guid", sort=False).head(2).head(n_targets)
     cand = generate_candidates(s, {"distances": list(distances),
                                    "gap_threshold": 0.0,
                                    "max_target_patches": len(s)})
@@ -391,6 +400,9 @@ def _make_candidates(world: SimWorld, scores: pd.DataFrame, v0_xy, rng,
 
     exec_arr = (np.asarray([e[:2] for e in executed_xy], dtype=float)
                 if executed_xy else np.zeros((0, 2)))
+    # 一次单源 Dijkstra 取代逐候选 A*: 同一套 8 邻域权重与贴角规则, 距离逐位
+    # 一致(实测最大差 0.000000), L/high 上 550 个候选省约 175 倍时间。
+    dfield = world.grid.distance_field(v0_xy)
 
     def _add(xy, target_pid, orientation):
         proj = world.grid.project_to_free(xy, max_dist=2.0)
@@ -403,7 +415,7 @@ def _make_candidates(world: SimWorld, scores: pd.DataFrame, v0_xy, rng,
         if cell in seen:
             return
         seen.add(cell)
-        d, _ = world.grid.astar(v0_xy, proj)
+        d = float(dfield[cell])
         if not np.isfinite(d):
             return
         rows.append({"view_id": f"c{len(rows):04d}",
