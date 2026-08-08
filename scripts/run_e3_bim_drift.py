@@ -12,6 +12,9 @@ generate_scene(n_temp=k) 在道路与设备之间放 k 个 BIM 查不到的临�
      n_temp 大幅波动, 那变化来自场景难度而非预测误差, H1 的结论不成立。
   H3 B10 相对 Bdisp(不用任何几何证据) 的优势随 n_temp 收窄。收窄多少决定了
      "遮挡感知"这项主张能在多大的 BIM 失配下继续成立。
+  H4 B11(B10 + 未建模遮挡物在线发现) 的退化显著小于 B10。这是针对 H1 所测退化
+     提出的补救: 遮挡物本身会被扫到, 无法关联到任何 BIM 构件的回波就暴露了它
+     们的位置。n_temp=0 时 B11 必须与 B10 逐位相同(见 tests/)。
 
 输出: results/exp3/{n_temp}/{method}/{scene}/{seed}/run.json 与 summary.md
 """
@@ -39,7 +42,7 @@ from patent_gap.simulation.closed_loop_v2 import (  # noqa: E402
 )
 from patent_gap.simulation.scene_gen import generate_scene  # noqa: E402
 
-METHODS = ["Bdisp_maxmin", "B1_patent", "B5_occ_rng", "B10_full"]
+METHODS = ["Bdisp_maxmin", "B1_patent", "B5_occ_rng", "B10_full", "B11_disc"]
 N_TEMP = [0, 3, 6, 9]
 SCENES = [("S", "low"), ("S", "mid"), ("M", "mid")]
 SEEDS = [0, 1, 2, 3, 4]
@@ -170,8 +173,8 @@ def summarize(out_root: Path, cfg: dict, cfg_hash: str, commit: str) -> None:
              "- n_temp = 场景中 BIM 查不到的临时占位物数量; vis_mae = 规划器可见性",
              "  预测相对实景的平均绝对误差(直接测量的偏离强度)", "",
              "## 各偏离水平下的表现", "",
-             "| n_temp | vis_mae | 方法 | awc恢复率 | 关键设备召回 | dens_ok | awc/1000s |",
-             "|---|---|---|---|---|---|---|"]
+             "| n_temp | vis_mae | 方法 | awc恢复率 | 构件等权恢复 | 关键设备召回 | dens_ok | awc/1000s |",
+             "|---|---|---|---|---|---|---|---|"]
     for n_temp in cfg["n_temp"]:
         sub_all = [r for r in rows if r["n_temp"] == n_temp]
         vm = float(np.nanmean([r["vis_mae"] for r in sub_all])) if sub_all else float("nan")
@@ -182,8 +185,8 @@ def summarize(out_root: Path, cfg: dict, cfg_hash: str, commit: str) -> None:
             def mu(k):
                 return float(np.nanmean([r.get(k, float("nan")) for r in sub]))
             lines.append(f"| {n_temp} | {vm:.4f} | {method} | {mu('awc_gap_recovery'):.3f} "
-                         f"| {mu('crit_recall'):.3f} | {mu('dens_ok'):.3f} "
-                         f"| {mu('awc_per_1000s'):.4f} |")
+                         f"| {mu('asset_recovery'):.3f} | {mu('crit_recall'):.3f} "
+                         f"| {mu('dens_ok'):.3f} | {mu('awc_per_1000s'):.4f} |")
 
     # H1/H2: 每种方法从 n_temp=0 到最大偏离的退化幅度(同场景同种子配对)
     idx = {(r["method"], r["n_temp"], r["scene"], r["seed"]): r for r in rows}
@@ -236,10 +239,39 @@ def summarize(out_root: Path, cfg: dict, cfg_hash: str, commit: str) -> None:
             t["method"].replace("n_temp=", ""), t["delta"],
             t["ci95"][0], t["ci95"][1], t["p_holm"]))
 
+    # H4: 在线发现未建模遮挡物能挽回多少 —— 逐偏离水平比 B11 与 B10
+    lines += ["", "## H4 在线发现未建模遮挡物 (B11 − B10, 构件等权恢复)", "",
+              "| n_temp | Δasset | 95%CI | p |", "|---|---|---|---|"]
+    disc_tests = []
+    for n_temp in cfg["n_temp"]:
+        a, b = [], []
+        for family, density in cfg["scenes"]:
+            for seed in cfg["seeds"]:
+                k1 = ("B11_disc", n_temp, f"scene_{family}_{density}", seed)
+                k0 = ("B10_full", n_temp, f"scene_{family}_{density}", seed)
+                if k0 in idx and k1 in idx:
+                    a.append(idx[k1].get("asset_recovery", float("nan")))
+                    b.append(idx[k0].get("asset_recovery", float("nan")))
+        if not a:
+            continue
+        d = np.asarray(a, float) - np.asarray(b, float)
+        disc_tests.append({"method": f"n_temp={n_temp}", "delta": float(np.nanmean(d)),
+                           "ci95": bootstrap_ci(d, n=5000),
+                           "p_raw": paired_permutation(np.asarray(a, float),
+                                                       np.asarray(b, float), seed=0)})
+    for t in holm_attach(disc_tests):
+        lines.append("| {} | {:+.3f} | [{:+.3f}, {:+.3f}] | {:.4f} |".format(
+            t["method"].replace("n_temp=", ""), t["delta"],
+            t["ci95"][0], t["ci95"][1], t["p_holm"]))
+
+    lines += ["", "> 配对置换检验在 15 对样本下的最小可能 p 为 2/2^15 = 6.1e-5;",
+              "> 各族内 Holm 校正。报告不显著时须一并考虑该分辨率下限。"]
+
     (out_root / "summary.md").write_text("\n".join(lines))
     (out_root / "summary.json").write_text(json.dumps(
         {"config_hash": cfg_hash, "git_commit": commit, "rows": rows,
-         "degradation": deg_tests, "advantage": adv_tests}, indent=1, default=str))
+         "degradation": deg_tests, "advantage": adv_tests,
+         "discovery": disc_tests}, indent=1, default=str))
     print(f"[e3] summary → {out_root/'summary.md'}", flush=True)
 
 
