@@ -99,3 +99,36 @@ def test_every_component_can_be_targeted():
         classes = set(world.patches["ifc_class"]) - {"ground"}
         missing = classes - set(tgt["ifc_class"])
         assert not missing, f"{family}/{density}: 这些类没有任何候选目标 {sorted(missing)}"
+
+
+def test_tight_budget_degrades_instead_of_collapsing():
+    """预算收紧时站数应单调减少, 而不是塌成零站。
+
+    公式(42) 的 cost 是时间当量(dist + t_scan·v_move), 而 length_max_m 是纯路径
+    预算, 懒惰贪心的预算又被抬高过 n_left·scan_equiv —— 两者只在恰好选满时等价。
+    选少了等式就松, 整个站集可能没有一站走得到, 原实现直接终止 episode。实测
+    S/low 在 length_max=25 m 下站数=0、awc=0, 而预算内的候选有两百多个。
+    """
+    import patent_gap.simulation.closed_loop_v2 as cl
+
+    scene = generate_scene(seed=0, family="S", density="low")
+    world = SimWorld.build(scene, SensorModel.from_config(SENSOR), sim_dtheta_deg=0.8)
+    init = default_init_stations(world, n=3)
+    probe = ObsState(world=world)
+    for k, o in enumerate(init):
+        probe.add_station(o, f"i{k}", seed=k)
+    gt = cl.build_ground_truth(world, list(probe.masks))
+
+    seen = {}
+    for length_max in (400.0, 60.0, 25.0, 12.0):
+        fin = cl.run_episode(world, init, cl.EpisodeConfig(
+            stations_max=6, length_max_m=length_max, rounds_max=6,
+            rho0=50.0, seed=0, method="B10_full"), gt=gt)["final"]
+        assert fin["n_stations"] >= 1, f"length_max={length_max}: 一站都没选出来"
+        assert fin["path_len_m"] <= length_max + 1e-9
+        assert fin["stop_reason"] in ("rounds", "stations", "length", "no_candidate")
+        seen[length_max] = fin["awc_gap_recovery"]
+    # 站数不要求单调 —— 预算紧时贪心会挑更近的站, 因而可能挤进更多站。要求的是
+    # 恢复率随预算单调不减, 这才是"预算换效果"该有的性质。
+    vals = [seen[b] for b in (12.0, 25.0, 60.0, 400.0)]
+    assert vals == sorted(vals), f"恢复率不随预算单调: {vals}"

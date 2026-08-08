@@ -571,6 +571,15 @@ def _select_next_station(world: SimWorld, obs: ObsState, cfg: EpisodeConfig,
                       budget=budget_left + max(n_left, 1) * scan_equiv,
                       max_stations=max(n_left, 1))
     uncov_now = gains.copy()          # 单步 ΔF 用：当前尚未覆盖的期望收益
+    # 集合选择用的是**整条路线**的预算, 本轮只执行一站; 当剩余路径预算很紧时,
+    # 选出的整个站集可能没有一站走得到。此时不该终止 episode(实测 S/low 在
+    # length_max=25 m 下站数=0、awc=0, 而付得起的候选有两百多个), 而应退而求其
+    # 次: 在预算内的候选里取公式(41) 价值最高的一个。
+    reachable = [k for k in range(len(cs)) if dist_v0[k] <= budget_left]
+    if not any(dist_v0[k] <= budget_left for k in sel):
+        if not reachable:
+            return None
+        sel = [max(reachable, key=lambda k: cs[k].value)]
     if not sel:
         return None
     pts_xy = [v0_xy] + [cs[k].position[:2] for k in sel]
@@ -583,16 +592,24 @@ def _select_next_station(world: SimWorld, obs: ObsState, cfg: EpisodeConfig,
     # 路线"排序的；闭环每轮只执行一站即重规划，取 TSP 首站等于系统性地挑最近
     # 而非最有价值的站。实测（docs/闭环执行策略升级.md）：在 B10 表现最差的场景中，
     # TSP 首站每轮的边际增益仅为贪心首选的 1/5～1/2。故默认改为单步 J 最大。
+    # 只在预算内付得起的站里选。公式(42) 的 cost 是**时间当量**
+    # (dist + t_scan·v_move), 而 length_max_m 是**纯路径**预算; 懒惰贪心的预算
+    # 又按 budget_left + n_left·scan_equiv 抬高过, 两者只在恰好选满 n_left 站时
+    # 等价。选少了等式就松, 于是 sel 里可能全是走不到的站 —— 实测 S/low 在
+    # length_max=25 m 时 Σdist=113 m 远超预算, 而付得起的候选其实有 202 个,
+    # 原实现却直接 return None 终止整个 episode, awc 归零。
+    afford = [i for i in range(len(sel)) if float(D[0, i + 1]) <= budget_left]
+
     def _pick() -> int | None:
-        if not sel:
+        if not afford:
             return None
         if cfg.exec_policy == "greedy_first":
-            return 0
+            return afford[0]
         if cfg.exec_policy == "tsp_first":
             for node in route[1:]:
-                if node > 0:
+                if node > 0 and (node - 1) in afford:
                     return node - 1
-            return None
+            return afford[0]
         # j_step：公式(44) 的单步形式。
         # 注意归一化基准：公式(44) 用 F_ub（全部表面分块的可达总收益）归一信息项、
         # 用 L_diag（场景对角线）归一路径项，这在"整条轨迹"粒度上是配平的；但在
@@ -601,21 +618,20 @@ def _select_next_station(world: SimWorld, obs: ObsState, cfg: EpisodeConfig,
         # 同解，实测 8 组配对中 6 组逐位相同）。故单步改用**步内 min-max 归一**：
         # 两项都落在 [0,1]，λ_reg / λ_len 才在这一粒度上表达设计意图。
         op = ObjectiveParams()
-        dF = np.array([float((uncov_now * c_jv[:, k]).sum()) for k in sel])
-        dist = np.array([float(D[0, i + 1]) for i in range(len(sel))])
+        dF = np.array([float((uncov_now * c_jv[:, sel[i]]).sum()) for i in afford])
+        dist = np.array([float(D[0, i + 1]) for i in afford])
         f_scale = float(dF.max()) or 1.0
         d_scale = float(dist.max()) or 1.0
-        rr = np.array([cs[k].r_reg for k in sel])
+        rr = np.array([cs[sel[i]].r_reg for i in afford])
         j = dF / f_scale + op.lambda_reg * rr - op.lambda_len * dist / d_scale
-        return int(np.argmax(j))
+        return afford[int(np.argmax(j))]
 
     k_local = _pick()
     if k_local is None:
         return None
     nxt = sel[k_local]
     d_first = float(D[0, k_local + 1])
-    if d_first > budget_left:
-        return None
+    assert d_first <= budget_left
     return np.asarray(cs[nxt].position, dtype=float), d_first
 
 
@@ -650,13 +666,21 @@ def run_episode(world: SimWorld, init_origins: list[np.ndarray],
     history = [episode_metrics(world, gt, obs.coverage(), obs.point_counts(),
                                0.0, 0, cfg.rho0, cfg.lambda_e)]
     executed = 0
+    # 提前终止的原因必须记下来。否则候选池空、硬约束全灭、预算走完这三种情况
+    # 在 final 里长得和正常收敛一模一样, 聚合表里只表现为"一个安静的低分"。
+    stop_reason = "rounds"
     for rnd in range(cfg.rounds_max):
-        if executed >= cfg.stations_max or path_len >= cfg.length_max_m:
+        if executed >= cfg.stations_max:
+            stop_reason = "stations"
+            break
+        if path_len >= cfg.length_max_m:
+            stop_reason = "length"
             break
         res = _select_next_station(world, obs, cfg, v0_xy, rng,
                                    budget_left=cfg.length_max_m - path_len,
                                    plan_oracle=plan_oracle, failed_xy=failed_xy)
         if res is None:
+            stop_reason = "no_candidate"
             break
         origin, d = res
         scan = obs.add_station(origin, f"{cfg.method}_r{rnd}", seed=cfg.seed * 100 + 50 + rnd)
@@ -678,6 +702,7 @@ def run_episode(world: SimWorld, init_origins: list[np.ndarray],
         history.append(episode_metrics(world, gt, obs.coverage(), obs.point_counts(),
                                        path_len, executed, cfg.rho0, cfg.lambda_e))
     final = dict(history[-1])
+    final["stop_reason"] = stop_reason
     if cfg.registration_realism:
         final["n_reg_failed"] = int(sum(not r["accepted"] for r in reg_log))
     return {"method": cfg.method, "seed": cfg.seed, "gt": {k: (v.tolist() if isinstance(v, np.ndarray) else v)
