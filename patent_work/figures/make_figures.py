@@ -55,68 +55,108 @@ def _txt(ax, x, y, s, **kw):
 
 # ---------------------------------------------------------------- 图 1 总体流程
 def fig1() -> None:
-    fig, ax = plt.subplots(figsize=(7.2, 8.6))
-    ax.set_xlim(0, 10); ax.set_ylim(0, 12.4); ax.axis("off")
+    """总体流程。S7b 的判定在 S7a 之前 —— 配准不可用时全局坐标不可信,
+    因而不能据以判定'离设计模型超过 ε', S7a 整体不执行。"""
+    fig, ax = plt.subplots(figsize=(8.4, 10.4))
+    ax.set_xlim(0, 12.4); ax.set_ylim(0, 15.2); ax.axis("off")
 
-    steps = [
-        ("S1", L("缺口证据与分数构建", "S1 gap evidence"), 11.4),
-        ("S2", L("移动平台可通行空间构建", "S2 traversable space"), 10.2),
-        ("S3", L("目标分块筛选与候选站位生成\n（含可通行路径代价）",
-                 "S3 candidates + path cost"), 8.9),
-        ("S4", L("基于规划用遮挡模型的候选站位评估",
-                 "S4 evaluate vs planning occlusion model"), 7.5),
-        ("S5", L("预算约束下选定待执行站位", "S5 select stations"), 6.3),
-        ("S6", L("按预设执行规则确定本轮执行站位\n并获取新增点云",
-                 "S6 execute one, acquire"), 5.0),
-        ("S7a", L("在线发现模型外遮挡物", "S7a discover off-model occluders"), 3.5),
-        ("S7b", L("新增观测的配准可用性判定（可选）",
-                  "S7b registration usability (optional)"), 2.3),
-        ("S8", L("更新规划用遮挡模型、缺口证据、剩余预算",
-                 "S8 update model / evidence / budget"), 1.0),
-    ]
-    boxes = {}
-    for tag, label, y in steps:
-        w = 6.2
-        b = mp.FancyBboxPatch((1.9, y - 0.42), w, 0.84,
-                              boxstyle="round,pad=0.06", linewidth=1.2,
-                              edgecolor="black", facecolor="white")
-        ax.add_patch(b)
-        _txt(ax, 2.25, y, tag, fontsize=9, ha="left", fontweight="bold")
-        _txt(ax, 5.3, y, label, fontsize=8)
-        boxes[tag] = y
+    def box(x, y, w, h, tag, label, fs=8):
+        ax.add_patch(mp.FancyBboxPatch((x, y - h / 2), w, h,
+                                       boxstyle="round,pad=0.05", lw=1.2,
+                                       edgecolor="black", facecolor="white"))
+        if tag:
+            _txt(ax, x + 0.28, y, tag, fontsize=8.5, ha="left", fontweight="bold")
+        _txt(ax, x + w / 2 + (0.3 if tag else 0), y, label, fontsize=fs)
 
-    # 主数据流（实线箭头）
-    chain = ["S1", "S2", "S3", "S4", "S5", "S6"]
-    for a, b in zip(chain, chain[1:]):
-        ax.annotate("", xy=(5.0, boxes[b] + 0.42), xytext=(5.0, boxes[a] - 0.42),
-                    arrowprops=dict(arrowstyle="-|>", lw=1.3, color="black"))
-    for tgt in ("S7a", "S7b"):
-        ax.annotate("", xy=(5.0, boxes[tgt] + 0.42), xytext=(5.0, boxes["S6"] - 0.42),
-                    arrowprops=dict(arrowstyle="-|>", lw=1.3, color="black",
-                                    connectionstyle="arc3,rad=0"))
-    ax.annotate("", xy=(5.0, boxes["S8"] + 0.42), xytext=(5.0, boxes["S7b"] - 0.42),
-                arrowprops=dict(arrowstyle="-|>", lw=1.3, color="black"))
+    def dia(cx, cy, w, h, label):
+        ax.add_patch(mp.Polygon([[cx, cy + h / 2], [cx + w / 2, cy],
+                                 [cx, cy - h / 2], [cx - w / 2, cy]],
+                                closed=True, lw=1.2, edgecolor="black",
+                                facecolor="white"))
+        _txt(ax, cx, cy, label, fontsize=7.6)
 
-    # 回灌（虚线箭头，走右侧）
-    ax.annotate("", xy=(8.35, boxes["S4"]), xytext=(8.35, boxes["S8"]),
-                arrowprops=dict(arrowstyle="-|>", lw=1.2, color="black", ls="--"))
-    ax.plot([8.1, 8.35], [boxes["S8"]] * 2, color="black", lw=1.2, ls="--")
-    ax.plot([8.1, 8.35], [boxes["S4"]] * 2, color="black", lw=1.2, ls="--")
-    _txt(ax, 9.1, (boxes["S4"] + boxes["S8"]) / 2,
-         L("规划用遮挡模型回灌", "occlusion model"), fontsize=7.5, rotation=90)
+    def arr(x0, y0, x1, y1, dashed=False, lw=1.3):
+        ax.annotate("", xy=(x1, y1), xytext=(x0, y0),
+                    arrowprops=dict(arrowstyle="-|>", lw=lw, color="black",
+                                    ls="--" if dashed else "-"))
 
-    ax.annotate("", xy=(1.15, boxes["S3"]), xytext=(1.15, boxes["S8"]),
-                arrowprops=dict(arrowstyle="-|>", lw=1.2, color="black", ls="--"))
-    ax.plot([1.15, 1.9], [boxes["S8"]] * 2, color="black", lw=1.2, ls="--")
-    ax.plot([1.15, 1.9], [boxes["S3"]] * 2, color="black", lw=1.2, ls="--")
-    _txt(ax, 0.55, (boxes["S3"] + boxes["S8"]) / 2,
-         L("缺口证据回灌", "gap evidence"), fontsize=7.5, rotation=90)
+    Y = {"S1": 14.5, "S2": 13.5, "S3": 12.5, "S4": 11.5, "S5": 10.5, "S6": 9.5}
+    for tag in ("S1", "S2", "S3", "S4", "S5", "S6"):
+        lbl = {"S1": L("缺口证据与分数构建（含缺口表面分块判定）", "S1 gap evidence"),
+               "S2": L("移动平台可通行空间构建", "S2 traversable space"),
+               "S3": L("目标分块筛选与候选站位生成（含可通行路径代价）", "S3 candidates"),
+               "S4": L("基于规划用遮挡模型的候选站位评估", "S4 evaluate"),
+               "S5": L("预算约束下选定待执行站位", "S5 select"),
+               "S6": L("按预设执行规则确定本轮执行站位并获取新增点云", "S6 execute")}[tag]
+        box(2.6, Y[tag], 7.4, 0.72, tag, lbl)
+    for a, b in zip(["S1", "S2", "S3", "S4", "S5"], ["S2", "S3", "S4", "S5", "S6"]):
+        arr(6.3, Y[a] - 0.36, 6.3, Y[b] + 0.36)
 
-    _txt(ax, 5.0, 12.15, L("图 1  总体流程", "Fig.1 Overall flow"),
-         fontsize=10, fontweight="bold")
-    _txt(ax, 5.0, 0.25,
-         L("实线箭头：本轮数据流    虚线箭头：跨轮回灌",
-           "solid: within-round flow   dashed: cross-round feedback"), fontsize=7.5)
+    dia(6.3, 8.35, 4.6, 1.1, L("是否启用配准可用性判定 S7b？",
+                               "registration check enabled?"))
+    arr(6.3, Y["S6"] - 0.36, 6.3, 8.9)
+
+    # 左支：不启用 → 缺省满足
+    _txt(ax, 3.3, 8.62, L("否", "no"), fontsize=8)
+    ax.plot([4.0, 2.3], [8.35, 8.35], color="black", lw=1.3)
+    arr(2.3, 8.35, 2.3, 7.35, lw=1.3)
+    box(0.55, 7.05, 3.5, 0.66, "", L("缺省：视为满足更新条件", "default: condition holds"), 7.4)
+    ax.plot([2.3, 2.3], [6.72, 6.15], color="black", lw=1.3)
+
+    # 右支：启用 → S7b
+    _txt(ax, 9.1, 8.62, L("是", "yes"), fontsize=8)
+    ax.plot([8.6, 10.2], [8.35, 8.35], color="black", lw=1.3)
+    arr(10.2, 8.35, 10.2, 7.35, lw=1.3)
+    box(8.3, 7.05, 3.4, 0.66, "S7b", L("配准可用性判定", "usability check"), 7.4)
+    ax.plot([10.2, 10.2], [6.72, 6.15], color="black", lw=1.3)
+
+    dia(6.3, 5.55, 5.0, 1.15, L("新增点云满足预设更新条件？",
+                                "new cloud satisfies condition?"))
+    ax.plot([2.3, 3.8], [6.15, 6.15], color="black", lw=1.3)
+    arr(3.8, 6.15, 4.6, 5.85)
+    ax.plot([10.2, 8.8], [6.15, 6.15], color="black", lw=1.3)
+    arr(8.8, 6.15, 8.0, 5.85)
+
+    # 是 → S7a → S8
+    _txt(ax, 6.62, 4.72, L("是", "yes"), fontsize=8)
+    arr(6.3, 4.98, 6.3, 4.36)
+    box(2.6, 4.0, 7.4, 0.72, "S7a", L("在线发现模型外遮挡物 → 体素 U_k",
+                                      "S7a discover off-model occluders"))
+    arr(6.3, 3.64, 6.3, 3.02)
+    box(2.2, 2.66, 5.6, 0.72, "S8", L("并入规划用遮挡模型；更新缺口证据",
+                                      "S8 merge; update evidence"), 7.6)
+
+    # 否 → 保持不变
+    _txt(ax, 9.3, 5.82, L("否", "no"), fontsize=8)
+    ax.plot([8.8, 11.55], [5.55, 5.55], color="black", lw=1.3)
+    arr(11.55, 5.55, 11.55, 3.02, lw=1.3)
+    ax.plot([11.55, 11.3], [3.02, 3.02], color="black", lw=1.3)
+    box(8.25, 2.66, 3.35, 0.86, "", L("遮挡模型与缺口证据均保持不变；\n记录失败站位",
+                                      "model & evidence unchanged;\nrecord failed station"), 7.0)
+
+    arr(5.0, 2.30, 5.0, 1.72)
+    ax.plot([9.9, 9.9], [2.23, 1.90], color="black", lw=1.3)
+    ax.plot([9.9, 5.0], [1.90, 1.90], color="black", lw=1.3)
+    box(2.2, 1.36, 7.4, 0.72, "", L("扣减本轮已发生的可通行路径代价",
+                                    "deduct path cost incurred"), 7.8)
+
+    # 回灌
+    ax.plot([2.2, 0.75], [1.36, 1.36], color="black", lw=1.2, ls="--")
+    arr(0.75, 1.36, 0.75, Y["S3"], dashed=True, lw=1.2)
+    ax.plot([0.75, 2.6], [Y["S3"]] * 2, color="black", lw=1.2, ls="--")
+    _txt(ax, 0.34, 7.0, L("缺口证据、失败站位、剩余预算回灌 S3",
+                          "evidence / failed station / budget → S3"),
+         fontsize=7.2, rotation=90)
+
+    _txt(ax, 6.0, 15.05, L("图 1  总体流程", "Fig.1 Overall flow"),
+         fontsize=10.5, fontweight="bold")
+    _txt(ax, 6.0, 0.5, L(
+        "矩形=处理步骤    菱形=判定    实线箭头=数据流    虚线箭头=跨轮回灌",
+        "rect=step  diamond=decision  solid=flow  dashed=cross-round feedback"),
+        fontsize=7.4)
+    _txt(ax, 6.0, 0.12, L(
+        "注：S7b 判定在 S7a 之前——配准不可用时该站点云的全局坐标不可信，"
+        "无法据以判定其是否偏离设计模型，故 S7a 整体不执行。", ""), fontsize=7.0)
     _save(fig, "图1_总体流程")
 
 
@@ -136,13 +176,16 @@ def fig2() -> None:
                               edgecolor="black", lw=1.2))
     ax.add_patch(mp.Rectangle((6.5, 4.7), 4.4, 4.2, facecolor="none",
                               edgecolor="black", lw=1.1, hatch="///"))
+    # 在安全区域基础上再按平台半径膨胀（与算法一致：障碍与禁入区一并膨胀）
+    ax.add_patch(mp.Rectangle((5.9, 4.1), 5.6, 5.4, facecolor="none",
+                              edgecolor="black", lw=1.0, ls=":"))
     _txt(ax, 8.7, 6.8, L("构件B\n带电", "B live"), color="white", fontsize=7.5)
     _txt(ax, 8.7, 9.35, L("带电体安全距离标记", "live safety zone"), fontsize=7.5)
     # 构件 C：顶面低于跨越高度 → 不标记
     ax.add_patch(mp.Rectangle((2.2, 1.4), 3.0, 1.2, facecolor="white",
-                              edgecolor="black", lw=1.2, ls="--"))
-    _txt(ax, 3.7, 2.0, L("构件C 顶面≤跨越高度\n不标记为障碍",
-                         "C top ≤ step height\nnot an obstacle"), fontsize=7.5)
+                              edgecolor="black", lw=1.0))
+    _txt(ax, 3.7, 2.0, L("构件C 顶面≤跨越高度\n不标记为障碍（故无膨胀）",
+                         "C top ≤ step height\nnot an obstacle (no dilation)"), fontsize=7.2)
     # 构件 D：净空大于平台高度 → 不标记
     ax.add_patch(mp.Rectangle((11.6, 6.6), 3.2, 0.7, facecolor="0.35",
                               edgecolor="black", lw=1.2))
@@ -155,8 +198,8 @@ def fig2() -> None:
     _txt(ax, 13.2, 4.15, L("可从下穿行", "passable underneath"), fontsize=7)
 
     _txt(ax, 8.0, 0.45, L(
-        "实心填充=障碍栅格   斜线阴影=带电体安全距离标记   "
-        "点线外框=按平台半径的膨胀   白色=自由空间",
+        "实心填充=障碍栅格   斜线阴影=带电体安全距离禁入标记   "
+        "点线外框=对已标记栅格（障碍与禁入）按平台半径的膨胀   细实线框=未标记为障碍的构件   白色=自由空间",
         "solid=obstacle  hatch=live safety  dotted outline=robot-radius dilation  white=free"),
         fontsize=7.2)
     _txt(ax, 8.0, 9.7, L("图 2  可通行空间构建", "Fig.2 Traversable space"),
@@ -164,58 +207,84 @@ def fig2() -> None:
     _save(fig, "图2_可通行空间")
 
 
-# ---------------------------------------------------------------- 图 3 距离层/壳
+# ---------------------------------------------------------------- 图 3 距离层
 def fig3() -> None:
-    fig, ax = plt.subplots(figsize=(7.4, 5.4))
-    ax.set_xlim(-1, 13); ax.set_ylim(-1, 9); ax.set_aspect("equal"); ax.axis("off")
+    """候选位置 = 分块形心 + 距离档 × 方向，方向为法向经方位角/俯仰角偏置旋转。
 
-    # 目标表面分块：一段有限长的面，法向朝右上
-    px, py = np.array([3.0, 1.4]), np.array([3.0, 5.2])
-    seg = np.vstack([px, py])
-    ax.plot(seg[:, 0], seg[:, 1], color="black", lw=3.5, solid_capstyle="butt")
-    _txt(ax, 2.15, 3.3, L("目标表面分块", "target patch"), fontsize=8, rotation=90)
-    n = np.array([1.0, 0.0])
-    mid = seg.mean(axis=0)
-    ax.annotate("", xy=(mid[0] + 1.5, mid[1]), xytext=(mid[0], mid[1]),
+    故距离层是以形心为球心、以距离档为半径、限制在法向锥内的球面区段，
+    在平面投影中表现为围绕形心的圆弧带，而非沿分块整段外扩的壳。
+    """
+    fig, ax = plt.subplots(figsize=(7.6, 5.6))
+    ax.set_xlim(-1.2, 13.5); ax.set_ylim(-2.4, 8.2)
+    ax.set_aspect("equal"); ax.axis("off")
+
+    # 目标表面分块与其形心
+    a, b = np.array([2.4, 1.4]), np.array([2.4, 4.6])
+    ax.plot([a[0], b[0]], [a[1], b[1]], color="black", lw=3.5, solid_capstyle="butt")
+    _txt(ax, 1.75, 3.8, L("目标表面分块", "target patch"), fontsize=8, rotation=90)
+    c = (a + b) / 2.0
+    ax.plot(*c, "o", ms=5, mfc="black", mec="black")
+    _txt(ax, 2.15, c[1] - 0.55, L("形心", "centroid"), fontsize=7.4)
+    ax.annotate("", xy=(c[0] + 1.5, c[1]), xytext=(c[0], c[1]),
                 arrowprops=dict(arrowstyle="-|>", lw=1.4, color="black"))
-    _txt(ax, mid[0] + 1.7, mid[1] + 0.35, L("法向 n", "normal n"), fontsize=8)
+    _txt(ax, c[0] + 1.75, c[1] + 0.38, L("法向 n", "normal n"), fontsize=8)
 
-    # 距离层/壳：沿分块**整段**外扩的壳带（不是以形心为圆心的同心圆）
-    # 壳带 = 到线段距离落在 [d-δ, d+δ] 的区域，只取法向侧
-    gx, gy = np.meshgrid(np.linspace(-1, 13, 700), np.linspace(-1, 9, 500))
-    a, b = seg[0], seg[1]
-    ab = b - a
-    t = np.clip(((gx - a[0]) * ab[0] + (gy - a[1]) * ab[1]) / (ab @ ab), 0, 1)
-    cx, cy = a[0] + t * ab[0], a[1] + t * ab[1]
-    dist = np.hypot(gx - cx, gy - cy)
-    side = (gx - cx) * n[0] + (gy - cy) * n[1] > 0
+    # 法向锥：方位角偏置 ±45°
+    half = np.deg2rad(38.0)
+    for sgn in (-1, 1):
+        ang = sgn * half
+        ax.plot([c[0], c[0] + 7.6 * np.cos(ang)], [c[1], c[1] + 7.6 * np.sin(ang)],
+                color="black", lw=0.8, ls=(0, (2, 3)))
+    _txt(ax, 9.2, c[1] + 4.9, L("法向锥（方位角偏置范围）",
+                                "cone of azimuth offsets"), fontsize=7.4)
 
-    for d, lab in ((2.5, "d1"), (5.0, "d2"), (8.0, "d3")):
-        band = (np.abs(dist - d) < 0.30) & side
-        ax.contourf(gx, gy, band.astype(float), levels=[0.5, 1.5],
-                    colors=["0.78"], alpha=0.95)
-        ax.contour(gx, gy, np.where(side, dist, np.nan), levels=[d],
-                   colors="black", linewidths=0.9, linestyles="dashed")
-        _txt(ax, 3.0 + d, 7.9, L(f"距离层 {lab}", f"shell {lab}"), fontsize=8)
+    th = np.linspace(-half, half, 240)
+    for d, lab in ((2.4, "d1"), (4.4, "d2"), (6.6, "d3")):
+        for w in (-0.24, 0.24):
+            ax.plot(c[0] + (d + w) * np.cos(th), c[1] + (d + w) * np.sin(th),
+                    color="0.55", lw=0.6)
+        ax.fill_between(c[0] + (d + 0.24) * np.cos(th), c[1] + (d + 0.24) * np.sin(th),
+                        c[1] + (d - 0.24) * np.sin(th), color="0.82", alpha=0.0)
+        xs_o = c[0] + (d + 0.24) * np.cos(th); ys_o = c[1] + (d + 0.24) * np.sin(th)
+        xs_i = c[0] + (d - 0.24) * np.cos(th); ys_i = c[1] + (d - 0.24) * np.sin(th)
+        ax.fill(np.concatenate([xs_o, xs_i[::-1]]),
+                np.concatenate([ys_o, ys_i[::-1]]), color="0.82", zorder=0)
+        ax.plot(c[0] + d * np.cos(th), c[1] + d * np.sin(th),
+                color="black", lw=0.9, ls="dashed")
+        _txt(ax, c[0] + d * np.cos(-half) + 0.05, c[1] + d * np.sin(-half) - 0.5,
+             L(f"距离层 {lab}", f"shell {lab}"), fontsize=7.6)
 
-    # 候选：落在壳带上；实心=保留，空心=剔除
-    keep = [(5.5, 2.2), (5.5, 4.6), (8.0, 3.1), (8.0, 5.6), (11.0, 3.3)]
-    drop = [(5.5, 6.6), (8.0, 1.0)]
-    for x, y in keep:
-        ax.plot(x, y, "o", ms=8, mfc="black", mec="black")
-    for x, y in drop:
-        ax.plot(x, y, "o", ms=8, mfc="white", mec="black", mew=1.4)
-    _txt(ax, 6.35, 2.2, "ℓ=4.1", fontsize=7)
-    _txt(ax, 8.85, 3.1, "ℓ=6.8", fontsize=7)
-    _txt(ax, 11.85, 3.3, "ℓ=9.5", fontsize=7)
+    # 候选：位于距离层上（实心=保留），以及经投影后偏离层的一个（说明可偏离）
+    keep = [(2.4, -22), (4.4, -8), (4.4, 24), (6.6, 8), (6.6, -20)]
+    for d, adeg in keep:
+        aa = np.deg2rad(adeg)
+        ax.plot(c[0] + d * np.cos(aa), c[1] + d * np.sin(aa), "o",
+                ms=7.5, mfc="black", mec="black")
+    drop = [(2.4, 33), (4.4, -34)]
+    for d, adeg in drop:
+        aa = np.deg2rad(adeg)
+        ax.plot(c[0] + d * np.cos(aa), c[1] + d * np.sin(aa), "o",
+                ms=7.5, mfc="white", mec="black", mew=1.4)
+    # 一个经自由空间投影后偏离层中心线的候选
+    aa = np.deg2rad(14); px = c[0] + 4.4 * np.cos(aa) + 0.60
+    py = c[1] + 4.4 * np.sin(aa) - 0.42
+    ax.plot(px, py, "o", ms=7.5, mfc="black", mec="black")
+    ax.annotate("", xy=(px, py), xytext=(px + 1.6, py + 1.1),
+                arrowprops=dict(arrowstyle="-", lw=0.8, color="black"))
+    _txt(ax, px + 2.7, py + 1.35, L("经自由空间投影后\n可偏离距离层",
+                                     "may leave the shell\nafter projection"), fontsize=7.0)
 
-    _txt(ax, 6.0, 8.6, L("图 3  候选站位与距离层", "Fig.3 Candidates and distance shells"),
+    _txt(ax, 6.2, 7.95, L("图 3  候选补充扫描站位与距离层",
+                          "Fig.3 Candidates and distance shells"),
          fontsize=10, fontweight="bold")
-    _txt(ax, 6.0, -0.7, L(
-        "灰带=距离层（沿分块整段外扩的壳，非以形心为圆心的同心圆）   "
-        "虚线=层中心距离   实心圆=保留的候选   空心圆=被剔除的候选   ℓ=可通行路径代价",
-        "grey band=distance shell along the whole patch, not concentric circles; "
-        "filled=kept candidate; hollow=rejected; ℓ=traversable path cost"), fontsize=7.0)
+    _txt(ax, 6.2, -1.75, L(
+        "灰带=距离层：以分块形心为球心、以距离档为半径、限制在法向锥内的球面区段（图为其平面投影）",
+        "shell: sphere of radius d about the centroid, restricted to the normal cone"),
+        fontsize=7.0)
+    _txt(ax, 6.2, -2.15, L(
+        "实心圆=保留的候选   空心圆=经自由空间投影、去重或可达性筛选后被剔除的候选   "
+        "本图仅示出目标导向候选，S3 另由自由栅格节点生成的候选未示出",
+        "filled=kept; hollow=rejected; grid-node candidates not shown"), fontsize=7.0)
     _save(fig, "图3_候选站位与距离层")
 
 
@@ -223,7 +292,7 @@ def fig3() -> None:
 def fig4() -> None:
     fig, axes = plt.subplots(2, 1, figsize=(7.2, 7.4))
     for k, ax in enumerate(axes):
-        ax.set_xlim(0, 14); ax.set_ylim(0, 5.4); ax.set_aspect("equal"); ax.axis("off")
+        ax.set_xlim(0, 14); ax.set_ylim(0.1, 5.6); ax.set_aspect("equal"); ax.axis("off")
         # 候选站位
         ax.plot(1.4, 2.7, "o", ms=9, mfc="black", mec="black")
         _txt(ax, 1.4, 1.9, L("候选站位", "candidate"), fontsize=7.5)
@@ -238,9 +307,13 @@ def fig4() -> None:
         if k == 0:
             ax.annotate("", xy=(12.3, 2.7), xytext=(1.7, 2.7),
                         arrowprops=dict(arrowstyle="-|>", lw=1.3, color="black"))
-            _txt(ax, 4.0, 3.1, L("射线在规划用遮挡模型上无阻断\n→ 预测为可见",
+            _txt(ax, 4.0, 3.15, L("射线在规划用遮挡模型上无阻断\n→ 预测为可见",
                                  "ray unblocked in planning model\n→ predicted visible"),
                  fontsize=7.2)
+            _txt(ax, 7.2, 0.95, L("交叉阴影块仅表示真实现场中客观存在的物体；\n"
+                                  "并入发现体素之前，该几何不属于规划用遮挡模型",
+                                  "hatched block exists on site only; before merging it is\n"
+                                  "not part of the planning occlusion model"), fontsize=7.0)
             _txt(ax, 7.0, 5.05, L("（上）并入发现体素之前", "(a) before merging"),
                  fontsize=9, fontweight="bold")
         else:
@@ -256,8 +329,11 @@ def fig4() -> None:
             _txt(ax, 3.6, 3.1, L("射线被发现体素阻断\n→ 预测为不可见",
                                  "ray blocked by discovered voxels\n→ predicted occluded"),
                  fontsize=7.2)
-            _txt(ax, 7.2, 1.35, L("点线方格=发现体素\n（不携带分块归属，只作遮挡体）",
-                                  "dotted cells = discovered voxels\n(no patch ownership)"),
+            _txt(ax, 7.2, 0.95, L(
+                "满足 d(x,T)>ε 且高度>z₀ 的回波点 → 体素化 → 并入规划用遮挡模型\n"
+                "点线方格=发现体素（不携带分块归属，只作遮挡体，不是新的待扫目标）",
+                "returns with d(x,T)>eps and height>z0 -> voxelized -> merged into the model\n"
+                "dotted cells = discovered voxels (occluders only, never scan targets)"),
                  fontsize=7.0)
             _txt(ax, 7.0, 5.05, L("（下）并入发现体素之后", "(b) after merging"),
                  fontsize=9, fontweight="bold")
@@ -316,8 +392,8 @@ def fig5() -> None:
                            "stations to execute: outside the boundary"), fontsize=7.4)
     # 回退所选候选：边界之内
     ax.plot(6.4, 6.9, "o", ms=9, mfc="black", mec="black")
-    _txt(ax, 7.6, 4.5, L("回退所选候选\n（边界之内，价值最高）",
-                         "fallback pick\n(inside, highest value)"), fontsize=7.4)
+    _txt(ax, 7.6, 4.5, L("回退所选候选：全部候选中\n满足 ℓ(v)≤B 且价值最高者",
+                         "fallback: highest-value candidate\namong all with l(v)<=B"), fontsize=7.4)
     ax.annotate("", xy=(6.45, 6.65), xytext=(7.4, 5.1),
                 arrowprops=dict(arrowstyle="-", lw=0.8, color="black"))
     # 指出门洞处的绕行
@@ -334,7 +410,8 @@ def fig5() -> None:
         "粗实线=等代价边界（由可通行路径代价给出，绕开障碍并沿通道延伸）    "
         "细虚线=同代价的欧氏圆（对照，非本方案所用）", ""), fontsize=7.0)
     _txt(ax, 8.0, -1.32, L(
-        "灰区=剩余预算内可达    实心填充=障碍    ▲=待执行站位    ●=回退所选候选",
+        "灰区：ℓ(v)≤B    粗实线：ℓ(v)=B    边界之外：ℓ(v)>B    "
+        "实心填充=障碍    ▲=待执行站位    ●=回退所选候选",
         "grey=reachable within budget; solid=obstacle"), fontsize=7.0)
     _save(fig, "图5_等代价边界")
 
@@ -354,8 +431,8 @@ def fig6() -> None:
         for x, y, w, h in small:
             ax.add_patch(mp.Rectangle((x, y), w, h, facecolor="0.8",
                                       edgecolor="black", lw=1.1))
-        _txt(ax, 2.9, 8.35, L("大面积构件", "large components"), fontsize=7.8)
-        _txt(ax, 7.7, 8.35, L("小尺寸构件", "small components"), fontsize=7.8)
+        _txt(ax, 2.9, 8.35, L("大面积的有缺口构件", "large gapped components"), fontsize=7.6)
+        _txt(ax, 7.7, 8.35, L("小尺寸的有缺口构件", "small gapped components"), fontsize=7.6)
 
         if k == 0:
             for x, y, w, h in big:
@@ -363,7 +440,7 @@ def fig6() -> None:
                     ax.plot(x + rng.uniform(0.3, w - 0.3), y + rng.uniform(0.3, h - 0.3),
                             "*", ms=9, color="black")
             _txt(ax, 5.5, 0.55, L("（左）按固定条数截断：名额被大面积构件占满，\n"
-                                  "小尺寸构件无表面分块入选",
+                                  "小尺寸的有缺口构件无表面分块入选",
                                   "(a) fixed cap: large components take all slots"),
                  fontsize=7.4)
         else:
@@ -374,14 +451,18 @@ def fig6() -> None:
             for x, y, w, h in small:
                 ax.plot(x + w / 2, y + h / 2, "*", ms=9, color="black")
             _txt(ax, 5.5, 0.55, L("（右）按构件分组、容量随构件数缩放：\n"
-                                  "每一构件均有表面分块入选",
-                                  "(b) per-component grouping: every component represented"),
+                                  "每一有缺口构件均有表面分块入选",
+                                  "(b) per-component grouping: every gapped component represented"),
                  fontsize=7.4)
-    fig.suptitle(L("图 6  目标表面分块的选取", "Fig.6 Selection of target patches"),
+    fig.suptitle(L("图 6  有缺口构件的目标表面分块选取",
+                   "Fig.6 Target patch selection among gapped components"),
                  fontsize=10, fontweight="bold",
                  fontproperties=_CN if USE_CN else None)
-    _txt(axes[0], 5.5, -0.35, L("★=入选目标分块集合的表面分块",
-                                "star = patch entering the target set"), fontsize=7.2)
+    _txt(axes[0], 5.5, -0.35, L(
+        "★=入选目标分块集合的表面分块；图中构件均已按 S1(e) 判定存在缺口，"
+        "无缺口的构件不参与分组",
+        "star = patch entering the target set; only gapped components take part"),
+        fontsize=7.0)
     _save(fig, "图6_目标分块选取")
 
 

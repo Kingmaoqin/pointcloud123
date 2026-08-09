@@ -121,19 +121,31 @@ def convert(md: Path, out: Path) -> None:
                 r.italic = True
             i += 1; continue
 
+        def _absorb(idx: int, first: str) -> tuple[str, int]:
+            """列表项的续行属于同一项。逐行独立处理会把跨行的 **粗体** 拆开，
+            后半截的 ** 就会原样出现在 Word 里。"""
+            parts, k = [first], idx + 1
+            while (k < len(lines) and lines[k].strip()
+                   and re.match(r"^\s{2,}\S", lines[k])
+                   and not re.match(r"^\s*([-*]\s|\d+\.\s|\||>|```)", lines[k])):
+                parts.append(lines[k].strip()); k += 1
+            return "".join(parts), k
+
         m = re.match(r"^(\s*)[-*]\s+(.*)$", ln)
         if m:
+            txt, i = _absorb(i, m.group(2))
             p = doc.add_paragraph(style="List Bullet")
             p.paragraph_format.left_indent = Pt(18 + 14 * (len(m.group(1)) // 2))
-            _emit_inline(p, m.group(2))
-            i += 1; continue
+            _emit_inline(p, txt)
+            continue
 
         m = re.match(r"^(\s*)(\d+)\.\s+(.*)$", ln)
         if m:
+            txt, i = _absorb(i, m.group(3))
             p = doc.add_paragraph(style="List Number")
             p.paragraph_format.left_indent = Pt(18 + 14 * (len(m.group(1)) // 2))
-            _emit_inline(p, m.group(3))
-            i += 1; continue
+            _emit_inline(p, txt)
+            continue
 
         if not ln.strip():
             i += 1; continue
