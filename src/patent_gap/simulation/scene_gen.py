@@ -269,13 +269,21 @@ def generate_scene(seed: int, family: str = "S", density: str = "mid",
 
 
 def build_trav_grid(scene: SceneModel, res: float = 0.25,
-                    r_robot: float = 0.6, h_robot: float = 1.8):
-    """公式(43): 由场景构件构建 2.5D 可通行图。"""
+                    r_robot: float = 0.6, h_robot: float = 1.8,
+                    z_step: float = 0.20):
+    """公式(43): 由场景构件构建 2.5D 可通行图。
+
+    z_step: 顶面低于该高度的构件按"可跨越/可站立的地面"处理, 不计为障碍。
+    原先只按类别硬编码跳过 "ground", 这对合成变电站够用, 对真实 IFC 不行 ——
+    CRAS 的 IfcSlab 就是楼板(z 顶面 0.10 m), 按障碍处理会把整个建筑底面填满,
+    实测自由格为 0/7154, 参考站集一站都建不起来、缺口数恒为 0。用物理高度判据
+    替代类别判据, 两种场景都成立(变电站的 ground 顶面为 0.0, 同样被跳过)。
+    """
     from ..mapping.traversability import TravGrid
 
     grid = TravGrid(scene.bounds_xy, res=res, r_robot=r_robot)
     for c in scene.components:
-        if c.cls == "ground":
+        if c.cls == "ground" or float(c.bbox_max[2]) <= z_step:
             continue
         grid.add_obstacle_box(c.bbox_min[:2], c.bbox_max[:2],
                               clearance_z=c.clearance_z, h_robot=h_robot)

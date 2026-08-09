@@ -478,6 +478,11 @@ class EpisodeConfig:
     lambda_e_value: float = 1.0
     seed: int = 0
     method: str = "B10_full"
+    # 候选环距离档与网格候选间距。缺省为户外变电站标定值; 真实室内 IFC 上必须
+    # 缩小 —— CRAS 实验楼房间只有几米, 用 (4,8,14) m 的环会全部落进墙里或场地外,
+    # project_to_free 失败后候选池坍缩。应随 r_opt 与场景尺度取值。
+    cand_distances: tuple[float, ...] = (4.0, 8.0, 14.0)
+    cand_grid_spacing: float = 10.0
     # 是否用已测点云在线发现 BIM 未建模的遮挡物并修正规划遮挡模型(见
     # occlusion/discovery.py)。B11_disc 即 B10 + 该项。
     discover_occluders: bool = False
@@ -614,6 +619,8 @@ def _select_next_station(world: SimWorld, obs: ObsState, cfg: EpisodeConfig,
     scores = compute_scores(obs, extended=extended, rho0=cfg.rho0, lambda_e=cfg.lambda_e)
     scores = scores.sort_values("patch_id").reset_index(drop=True)
     cand = _make_candidates(world, scores, v0_xy, rng,
+                            distances=cfg.cand_distances,
+                            grid_spacing=cfg.cand_grid_spacing,
                             executed_xy=([s.origin[:2] for s in obs.scans]
                                          + list(failed_xy or [])))
     if cand.empty:
