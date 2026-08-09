@@ -34,7 +34,12 @@ class V2Config:
     o_min_gate: float | None = None
     gamma: float = 1.0
     lambda_reg: float = 0.5
-    eta: float = 0.10
+    # info 改为步内 max 归一后, 原 η=0.10 的相对权重被放大约 58 倍(旧式 info
+    # 中位 5.14, 新式 0.088 < 惩罚上限 0.10) —— S/low 首轮 564 个候选里有 224 个
+    # value ≤ 0, 而 B5 以 value>0 作硬门槛, 预算紧时会比改动前更早终止。B5 是
+    # 预注册检验的基线, 其行为不该被本方法的归一化改动波及。按同一比例回调:
+    # 0.10 / 58.33 ≈ 0.0017, 取 0.002。
+    eta: float = 0.002
     frontality_min: float = 0.0   # 正视性下限(f≤0 已自然为0)
     use_occlusion: bool = True    # 消融开关(B5 等)
     use_reg_term: bool = True

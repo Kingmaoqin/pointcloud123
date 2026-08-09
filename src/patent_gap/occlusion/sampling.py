@@ -17,7 +17,14 @@ import numpy as np
 # 的是总采样点数还更少, 因为原先大量小 Patch 被 m_min=4 抬着。
 # 该常数同时决定 registration/realism.py 的 n_overlap(见 OPEN_ISSUES #28)。
 A0_DEFAULT = 0.25   # m²/点 → 4 点/m²
-M_MIN_DEFAULT = 4
+# 下限不能取 4。关键设备(E≥0.8)的分块面积中位只有 0.24–0.26 m², 在 a_0=0.25 下
+# 全部落到下限 —— S/low 有 84.7%、L/high 有 98.1% 的关键分块只有 4 个采样点,
+# 于是覆盖率只能取 {0,.25,.5,.75,1}, 而 crit_recall 的判据恰是 C_now ≥ 0.5·C_gt。
+# 也就是说 a_0 的调整虽然让 awc(面积加权、大面主导)的尺子恒定了, 却把
+# asset_recovery / crit_recall(构件等权、小面主导)的分辨率砍到 4 档 —— 而后者
+# 正是为"awc 被大面主导"才引入的。取 16 使覆盖率分辨率细化到 1/16, 大面的物理
+# 密度不受影响(仍为 4.0 点/m²), 总采样点数约增至 1.6–2.3 倍。
+M_MIN_DEFAULT = 16
 M_MAX_DEFAULT = 1024
 
 
