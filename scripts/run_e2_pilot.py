@@ -102,6 +102,12 @@ def main() -> None:
                 run_dir = out_root / method / scene_name / str(seed)
                 run_path = run_dir / "run.json"
                 if run_path.exists():
+                    prev = json.loads(run_path.read_text()).get("git_commit")
+                    if prev != commit:
+                        raise SystemExit(
+                            f"拒绝续跑: {run_path} 产自 {prev}, 当前 {commit}。"
+                            f"断点续跑只判文件存在会拼出版本混合的结果集 —— "
+                            f"请先清空该输出目录再重跑。")
                     print(f"[e2]   {method}: exists, skip (禁止覆盖)")
                     continue
                 t1 = time.time()
@@ -167,8 +173,14 @@ def summarize(out_root: Path, config: dict, cfg_hash: str, commit: str) -> None:
         for k in keys:
             m[k].append(row.get(k, float("nan")))
 
+    # 失败的 run 与提前终止必须在汇总里露面。此前 status=failed 的行 final=None,
+    # 于是没有任何指标列、被 nanmean 静默跳过, 而表头的 runs= 又把它算进去。
+    import collections
+    n_failed = sum(1 for r in rows if r.get("status") != "ok")
+    stops = collections.Counter(r.get("stop_reason", "n/a") for r in rows)
     summary = {"config": config, "config_hash": cfg_hash, "git_commit": commit,
-               "n_runs": len(rows), "methods": {}}
+               "n_runs": len(rows), "n_failed": n_failed,
+               "stop_reason": dict(stops), "methods": {}}
     for m, vals in by_method.items():
         entry = {}
         for k in keys:
@@ -194,7 +206,8 @@ def summarize(out_root: Path, config: dict, cfg_hash: str, commit: str) -> None:
     tests = []
     for baseline in ["B0_random", "Bdisp_maxmin", "Bbim_offline", "B1_patent",
                      "B5_occ_rng"]:
-        # 预注册: 主指标族 = {awc, asset_recovery} × 4 个基线(共 8 个检验)。
+        # 预注册: 主指标族 = {awc, asset_recovery} × 5 个基线(B0/Bdisp/Bbim/B1/B5),
+        # 共 10 个检验。族的大小由 METHODS 决定, 改基线集时须同步核对本行。
         # 不进 Holm 族 —— 把 awc 的三个近似变换(ig_per_m=awc/L, awc_per_1000s=
         # awc/T)塞进同一族, 既稀释主指标又给同一效应三次机会; 而 awc_per_1000s
         # 与 B10 内部的 cost=dist+t_scan·v_move 同构(T=2·Σcost), 本就不能作独立
@@ -212,7 +225,9 @@ def summarize(out_root: Path, config: dict, cfg_hash: str, commit: str) -> None:
     (out_root / "summary.json").write_text(json.dumps(summary, indent=1))
 
     lines = ["# E2 pilot 结果汇总", "",
-             f"- config_hash `{cfg_hash}`, commit `{commit}`, runs={len(rows)}", "",
+             f"- config_hash `{cfg_hash}`, commit `{commit}`, runs={len(rows)}"
+             + (f", **失败 {n_failed}**" if n_failed else ", 失败 0"),
+             f"- 终止原因分布: {dict(stops)}", "",
              "| 方法 | awc恢复率 | 构件等权 | dens_ok | vs完整普查 | crit_recall | 路径(m) | 站数 | 单位路径增益 | awc/1000s |",
              "|---|---|---|---|---|---|---|---|---|---|"]
     for m in config["methods"]:

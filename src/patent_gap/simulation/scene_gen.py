@@ -203,10 +203,18 @@ def generate_scene(seed: int, family: str = "S", density: str = "mid",
     # 外, 最远 14 m —— 那里没有可通行格, 永远扫不到, 等于给 awc 压一个人为
     # 天花板。抽样次数不变, 故不影响 pitch 上限本就宽裕的场景(S/low、S/mid、
     # M/mid、M/low、L/low)的既有结果。
+    # 用 min() 钳位会让上限低于 9 m 的场景退化成常数 —— 实测 L/high 20/20 个
+    # 种子的 pitch 全部恒为 8.857 m, 间隔排 x 坐标逐位相同, 跨种子只剩相位与
+    # 高度等次要随机量, E5 的跨场景变异系数会低估其真实方差。改为压缩抽样区间
+    # (抽样次数不变, 不破坏 RNG 流, 上限宽裕的场景逐比特不受影响)。
     pitch_max = (W - 12.0) / max(n_bay - 1, 1)
-    bay_pitch = float(min(rng.uniform(9.0, 14.0), pitch_max))
+    bay_pitch = float(rng.uniform(min(9.0, pitch_max), min(14.0, pitch_max)))
     x_start = -(n_bay - 1) * bay_pitch / 2
-    bay_y = road_y + 10.0
+    # 间隔排在 y 方向的跨度是 bay_y ± 6 m(CT/PT 在 +6, 避雷器在 −6)。S 族的
+    # D/2 恰为 16.0, 而 road_y+10+6 = 16.0 —— 20/20 个种子的 CT/PT 全部嵌在北
+    # 围栏里并越界 0.143 m, 且其 E_i=0.8 计入关键设备召回、live=True 的 1.5 m
+    # 禁入区把北侧通道封死。此前的 pitch 修复只管 x 方向。
+    bay_y = min(road_y + 10.0, D / 2.0 - 8.0)
     for k in range(n_bay):
         _bay(b, x_start + k * bay_pitch, bay_y, rng)
 

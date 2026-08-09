@@ -145,9 +145,16 @@ def score_candidates(patch_scores: pd.DataFrame, candidates: pd.DataFrame, view_
     max_range = float((view_config or {}).get("max_range_m", 20.0))
     # 距离核须绑在传感器最优距离上, 不能写死室内量级的 2.5 m —— 缺省 2.5 配
     # (4, 8, 14) m 的户外候选距离档时, d=8 m 的权重只有 d=4 m 的 1/45、d=14 m
-    # 的 1/2200 万, 等于 B1 生成了远档候选却给它们打零分, 有效半径只剩约 6 m。
+    # 的 1/2200 万, 等于生成了远档候选却给它们打零分, 有效半径只剩约 6 m。
+    #
+    # 但 σ **不能**跟着一起缩: 未传 r_opt_m 的调用方(webapp、cli、
+    # run_real_pipeline、run_synthetic_pipeline、v1 闭环、greedy_view_set)
+    # 会落到 2.5, 若同时把 σ 从原来的 2.0 改成 0.4·2.5=1.0, d=6 m 的权重要掉
+    # 99%、d=8 m 掉 99.999% —— 有效半径从约 ±4 m 缩到 ±2 m, 比它要修的问题
+    # 更糟, 且真实交付走的正是这几条通路。故 σ 缺省保持 2.0, 只有显式给出
+    # r_opt_m 时才按 0.4·r_opt 缩放。
     r_opt = float((view_config or {}).get("r_opt_m", 2.5))
-    sigma_d = 0.4 * r_opt
+    sigma_d = 0.4 * r_opt if "r_opt_m" in (view_config or {}) else 2.0
     if not 0 < fov_deg <= 180:
         raise ValueError("field_of_view_deg must be in (0, 180]")
     if max_range <= 0:

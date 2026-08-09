@@ -34,6 +34,11 @@ from .scene_patches import build_scene_patches
 
 TRIPOD_Z = 2.0
 
+KNOWN_METHODS = frozenset({
+    "B0_random", "Bdisp_maxmin", "Bbim_offline", "B1_patent",
+    "B5_occ_rng", "B10_full", "B11_disc",
+})
+
 
 # ---------------------------------------------------------------- world
 
@@ -545,6 +550,10 @@ def _select_next_station(world: SimWorld, obs: ObsState, cfg: EpisodeConfig,
     信号。
     """
     method = cfg.method
+    if method not in KNOWN_METHODS:
+        # 无兜底时拼错的方法名会 fall-through 到 B10 分支, 静默产出一整套
+        # 标签错误但看着正常的结果 —— 批处理靠字符串列表驱动, 一个 typo 就够。
+        raise ValueError(f"未知方法 {method!r}; 已知: {sorted(KNOWN_METHODS)}")
     plan_oracle = plan_oracle if plan_oracle is not None else world.plan_oracle
     if method == "B0_random":
         free_cells = np.argwhere(world.grid._compute_free())
@@ -567,10 +576,11 @@ def _select_next_station(world: SimWorld, obs: ObsState, cfg: EpisodeConfig,
         if plan is None:
             plan = _bim_offline_plan(world, plan_oracle, rng)
             obs._bbim_plan = plan
+        dfield_b = world.grid.distance_field(v0_xy)   # 每轮一次, 不在循环里
         for k, xy in enumerate(plan):
             if k in getattr(obs, "_bbim_used", set()):
                 continue
-            d = float(world.grid.distance_field(v0_xy)[world.grid.to_ij(xy)])
+            d = float(dfield_b[world.grid.to_ij(xy)])
             if not np.isfinite(d) or d > budget_left:
                 continue
             obs._bbim_used = getattr(obs, "_bbim_used", set()) | {k}
@@ -722,8 +732,10 @@ def _select_next_station(world: SimWorld, obs: ObsState, cfg: EpisodeConfig,
     if k_local is None:
         return None
     nxt = sel[k_local]
+    # afford 已按同一表达式过滤过, _pick 的三条分支也只返回 afford 中的元素,
+    # 故此处不再重复检查(裸 assert 在 python -O 下会被剥掉, 不剥掉时抛异常又会
+    # 让整个 episode 记为 failed, 两种行为都不是想要的)。
     d_first = float(D[0, k_local + 1])
-    assert d_first <= budget_left
     return np.asarray(cs[nxt].position, dtype=float), d_first
 
 

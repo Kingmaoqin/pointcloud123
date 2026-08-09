@@ -130,6 +130,12 @@ def main() -> None:
                     run_dir = out_root / f"n{n_temp}" / method / scene_name / str(seed)
                     run_path = run_dir / "run.json"
                     if run_path.exists():
+                        prev = json.loads(run_path.read_text()).get("git_commit")
+                        if prev != commit:
+                            raise SystemExit(
+                                f"拒绝续跑: {run_path} 产自 {prev}, 当前 {commit}。"
+                                f"断点续跑只判文件存在会拼出版本混合的结果集 —— "
+                                f"请先清空该输出目录再重跑。")
                         continue
                     t0 = time.time()
                     try:

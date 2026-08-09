@@ -48,8 +48,8 @@ def test_every_scene_family_runs(family, density):
         assert np.isfinite(v) and 0.0 <= v <= 1.0, f"{family}/{density}: {key}={v}"
 
 
-@pytest.mark.parametrize("family,density", [("S", "high"), ("M", "high"),
-                                            ("L", "mid"), ("L", "high")])
+@pytest.mark.parametrize("family", ["S", "M", "L"])
+@pytest.mark.parametrize("density", ["low", "mid", "high"])
 def test_equipment_stays_inside_the_site(family, density):
     """间隔排必须放得进场地。
 
@@ -67,8 +67,11 @@ def test_equipment_stays_inside_the_site(family, density):
                 continue
             over = max(xmin - c.bbox_min[0], c.bbox_max[0] - xmax,
                        ymin - c.bbox_min[1], c.bbox_max[1] - ymax)
-            assert over <= 0.5, (f"{family}/{density} seed{seed}: {c.cls} "
-                                 f"越出场地 {over:.2f} m")
+            # 容差必须紧到能抓住嵌在围栏里的构件。此前取 0.5 m, 恰好放过 S 族
+            # CT/PT 那 0.143 m 的越界, 而参数表又漏了 E2 实际使用的 S/low、
+            # S/mid —— 测试宣称锁住这条却没锁住。
+            assert over <= 0.05, (f"{family}/{density} seed{seed}: {c.cls} "
+                                  f"越出场地 {over:.3f} m")
 
 
 def test_every_component_can_be_targeted():
