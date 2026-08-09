@@ -60,7 +60,9 @@ SCENES = [("S", "low"), ("S", "mid"), ("M", "mid")]
 SEEDS = [0, 1, 2, 3, 4]
 METRICS = ["awc_gap_recovery", "crit_recall", "dens_ok", "path_len_m", "vis_mae"]
 
-V_MOVE, T_SCAN = 0.5, 180.0
+from patent_gap.planning.objective import (  # noqa: E402
+    T_SCAN_DEFAULT as T_SCAN, V_MOVE_DEFAULT as V_MOVE,
+)
 
 
 def git_commit() -> str:

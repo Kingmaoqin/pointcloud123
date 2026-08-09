@@ -31,8 +31,9 @@ from patent_gap.simulation.scene_gen import generate_scene  # noqa: E402
 
 METHODS = ["B0_random", "Bdisp_maxmin", "B1_patent", "B5_occ_rng", "B10_full"]
 
-V_MOVE = 0.5     # m/s 三脚架搬站步行速度
-T_SCAN = 180.0   # s  单站架设+扫描耗时(与 closed_loop_v2 的 scan_equiv 同一标定)
+from patent_gap.planning.objective import (  # noqa: E402
+    T_SCAN_DEFAULT as T_SCAN, V_MOVE_DEFAULT as V_MOVE,
+)
 
 
 def git_commit() -> str:
@@ -157,8 +158,9 @@ def summarize(out_root: Path, config: dict, cfg_hash: str, commit: str) -> None:
                 rows.append({"method": method, "scene": f"scene_{family}_{density}",
                              "seed": seed, "status": r["status"], **fin})
     by_method: dict[str, dict[str, list]] = {}
-    keys = ["awc_gap_recovery", "dens_ok", "crit_recall", "path_len_m",
-            "n_stations", "ig_per_m", "T_total_s", "awc_per_1000s"]
+    keys = ["awc_gap_recovery", "asset_recovery", "dens_ok", "dens_ok_vs_full",
+            "crit_recall", "path_len_m", "n_stations", "ig_per_m",
+            "T_total_s", "awc_per_1000s"]
     for row in rows:
         m = by_method.setdefault(row["method"], {k: [] for k in keys})
         for k in keys:
@@ -190,7 +192,12 @@ def summarize(out_root: Path, config: dict, cfg_hash: str, commit: str) -> None:
 
     tests = []
     for baseline in ["B0_random", "Bdisp_maxmin", "B1_patent", "B5_occ_rng"]:
-        for metric in ["awc_gap_recovery", "ig_per_m", "crit_recall", "awc_per_1000s"]:
+        # 预注册: 主指标族 = awc × 4 个基线(共 4 个检验)。其余指标作描述性报告,
+        # 不进 Holm 族 —— 把 awc 的三个近似变换(ig_per_m=awc/L, awc_per_1000s=
+        # awc/T)塞进同一族, 既稀释主指标又给同一效应三次机会; 而 awc_per_1000s
+        # 与 B10 内部的 cost=dist+t_scan·v_move 同构(T=2·Σcost), 本就不能作独立
+        # 确认(OPEN_ISSUES #30)。族的定义在看到结果之前固定。
+        for metric in ["awc_gap_recovery", "asset_recovery"]:
             x, y = paired(metric, "B10_full", baseline)
             pv = paired_permutation(x, y, n=10000, seed=0)
             tests.append({"comparison": f"B10_full vs {baseline}", "metric": metric,
@@ -204,17 +211,18 @@ def summarize(out_root: Path, config: dict, cfg_hash: str, commit: str) -> None:
 
     lines = ["# E2 pilot 结果汇总", "",
              f"- config_hash `{cfg_hash}`, commit `{commit}`, runs={len(rows)}", "",
-             "| 方法 | awc恢复率 | dens_ok | crit_recall | 路径(m) | 站数 | 单位路径增益 | 总耗时(s) | awc/1000s |",
-             "|---|---|---|---|---|---|---|---|---|"]
+             "| 方法 | awc恢复率 | 构件等权 | dens_ok | vs完整普查 | crit_recall | 路径(m) | 站数 | 单位路径增益 | awc/1000s |",
+             "|---|---|---|---|---|---|---|---|---|---|"]
     for m in config["methods"]:
         e = summary["methods"].get(m)
         if not e:
             continue
         lines.append(
-            f"| {m} | {e['awc_gap_recovery']['mean']:.3f} | {e['dens_ok']['mean']:.3f} "
-            f"| {e['crit_recall']['mean']:.3f} | {e['path_len_m']['mean']:.0f} "
-            f"| {e['n_stations']['mean']:.1f} | {e['ig_per_m']['mean']:.4f} "
-            f"| {e['T_total_s']['mean']:.0f} | {e['awc_per_1000s']['mean']:.4f} |")
+            f"| {m} | {e['awc_gap_recovery']['mean']:.3f} "
+            f"| {e['asset_recovery']['mean']:.3f} | {e['dens_ok']['mean']:.3f} "
+            f"| {e['dens_ok_vs_full']['mean']:.3f} | {e['crit_recall']['mean']:.3f} "
+            f"| {e['path_len_m']['mean']:.0f} | {e['n_stations']['mean']:.1f} "
+            f"| {e['ig_per_m']['mean']:.4f} | {e['awc_per_1000s']['mean']:.4f} |")
     lines += ["", "## 配对置换检验(Holm 校正)", "",
               "| 对比 | 指标 | Δ均值 | p_raw | p_holm |", "|---|---|---|---|---|"]
     for t in tests:

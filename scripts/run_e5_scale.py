@@ -69,7 +69,9 @@ SEEDS = [0, 1, 2]
 # 取 9.3 使 S/low(56 构件) 得到 6 站, 与既有 E2 协议对齐。
 COMPONENTS_PER_STATION = 9.3
 LEN_PER_STATION = 60.0    # m/站, 宽到基本不绑定
-V_MOVE, T_SCAN = 0.5, 180.0
+from patent_gap.planning.objective import (  # noqa: E402
+    T_SCAN_DEFAULT as T_SCAN, V_MOVE_DEFAULT as V_MOVE,
+)
 KEYS = ["awc_gap_recovery", "asset_recovery", "crit_recall", "dens_ok"]
 
 
