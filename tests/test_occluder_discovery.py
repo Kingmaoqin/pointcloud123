@@ -136,21 +136,31 @@ def test_failed_registration_does_not_trap_the_planner():
 
     picks: list[tuple] = []
     original = cl.ObsState.add_station
+    original_reg = cl.register_station
+    calls = {"n": 0}
 
     def spy(self, origin, station_id, seed=0):
         if station_id.startswith("B10"):
             picks.append(tuple(np.round(origin[:2], 2)))
         return original(self, origin, station_id, seed=seed)
 
+    def fail_first(*a, **kw):
+        # 直接注入一次失败, 不依赖某个场景恰好重叠不足 —— 要锁的是失败之后的
+        # 控制流, 而重叠率会随采样密度等实现细节变动。
+        calls["n"] += 1
+        return (False, float("inf")) if calls["n"] == 1 else original_reg(*a, **kw)
+
     cl.ObsState.add_station = spy
+    cl.register_station = fail_first
     try:
         res = cl.run_episode(world, init, cl.EpisodeConfig(
             stations_max=6, length_max_m=400.0, rounds_max=6, rho0=50.0,
             seed=0, method="B10_full", registration_realism=True), gt=gt)
     finally:
         cl.ObsState.add_station = original
+        cl.register_station = original_reg
 
-    # 该场景种子下首轮必失败(重叠 0.295 < O_min 0.30), 正是要覆盖的分支
     assert res["registration"] and not res["registration"][0]["accepted"]
+    assert res["final"]["n_reg_failed"] == 1
     assert len(set(picks)) == len(picks), f"重复选中同一站位: {picks}"
     assert res["final"]["awc_gap_recovery"] > 0.5

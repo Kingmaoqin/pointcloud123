@@ -10,9 +10,15 @@ import hashlib
 
 import numpy as np
 
-A0_DEFAULT = 0.01   # m²/点
+# 采样密度必须是**固定的物理量**, 否则 awc 跨场景不在同一把尺子上。
+# 原取 a_0=0.01、m_max=64: 大面被 m_max 顶住, 而 86–93% 的 awc 权重恰恰压在
+# 这些大面上 —— 实测其采样密度 S/low 4.16 点/m²、M/mid 3.45、L/high 3.11,
+# 场景越大越稀(−25%)。改成 a_0=0.25(4 点/m²) 配 m_max=1024 后密度恒定; 反直觉
+# 的是总采样点数还更少, 因为原先大量小 Patch 被 m_min=4 抬着。
+# 该常数同时决定 registration/realism.py 的 n_overlap(见 OPEN_ISSUES #28)。
+A0_DEFAULT = 0.25   # m²/点 → 4 点/m²
 M_MIN_DEFAULT = 4
-M_MAX_DEFAULT = 64
+M_MAX_DEFAULT = 1024
 
 
 def _halton(index: np.ndarray, base: int) -> np.ndarray:

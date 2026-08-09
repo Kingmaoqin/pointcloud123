@@ -29,6 +29,9 @@ class V2Config:
     tau_gap: float = TAU_GAP_DEFAULT
     tau_cov: float = TAU_COV_DEFAULT
     o_min: float = O_MIN_DEFAULT
+    # 剔除候选用的重叠率门槛。缺省跟随 o_min; 软回退时单独放松它, 而 r_reg 仍
+    # 按 o_min 计算 —— 否则回退会把 R^reg 悄悄换成 (1−Degen)。
+    o_min_gate: float | None = None
     gamma: float = 1.0
     lambda_reg: float = 0.5
     eta: float = 0.10
@@ -99,7 +102,8 @@ def score_candidates_v2(
     patch_ids = patch_scores["patch_id"].to_numpy()
     coverage = np.asarray(coverage, dtype=np.float64).reshape(J)
 
-    out: list[CandidateScore] = []
+
+    raw: list[tuple] = []
     for cand in candidates.itertuples(index=False):
         pos = np.asarray(cand.position, dtype=np.float64).reshape(3)
         dvec = pos[None, :] - cent
@@ -156,20 +160,42 @@ def score_candidates_v2(
         # 硬约束(41 末段)
         if (q > 0).sum() == 0:
             continue
-        if cfg.use_reg_term and ov < cfg.o_min:
+        gate = cfg.o_min if cfg.o_min_gate is None else cfg.o_min_gate
+        if cfg.use_reg_term and ov < gate:
             continue
 
-        info = float((g_task[mask_new] * area[mask_new] * q[mask_new]).sum())
-        a_bar = float(area[mask_new].mean()) if mask_new.any() else 0.0
+        info_raw = float((g_task[mask_new] * area[mask_new] * q[mask_new]).sum())
         # 冗余惩罚 O_v: 视场内已覆盖面积占比(沿母专利思想)
         denom = float(area[in_fov].sum())
         o_v = float(area[mask_ovl].sum()) / denom if denom > 0 else 0.0
-        reg_gain = cfg.lambda_reg * a_bar * rr if cfg.use_reg_term else 0.0
-        value = info + reg_gain - cfg.eta * o_v
+        # 公式(41) 三项量纲配平(实现精化, 见 OPEN_ISSUES #36)。
+        # 原式 value = info + λ_reg·Ā_v·R^reg − η·O_v 里, info 是**广延量**(随
+        # 视场内缺口 Patch 数与面积增长), 而 Ā_v 是均值、O_v 是 [0,1] 比值。
+        # 实测三项中位数之比: S/low 上 reg/info 已只有 0.64%, M/mid 0.07%,
+        # L/high **0.02%** —— 公式(41) 在大场景里退化成纯 info 项, B10 数值上
+        # 等价于"B5 + 一个重叠率硬门", 配准感知(36)-(40) 被场景规模稀释掉了。
+        # 按公式(44) 自己已经采用的做法, 用 F_ub = Σ_j G_task_j·A_j 归一 info,
+        # 三项同落 [0,1], λ_reg=0.5 / η=0.10 才在任何规模下表达同一设计意图。
+        # 归一后 Ā_v 不再需要(它原本就是为把 reg 项抬到 info 量级而设)。
+        raw.append((str(cand.view_id), tuple(pos.tolist()), info_raw,
+                    float(rr), float(ov), float(dg), float(o_v), q))
 
+    # 三项在**本轮候选内**配平后再定值。归一基准取本轮 info 的最大值: info 读作
+    # "相对本轮最好那一站拿到了几成信息", λ_reg=0.5 于是读作"配准支持最多抵得上
+    # 最佳候选信息量的一半"。用全场 F_ub 归一则 info 只有 0.06 量级, λ_reg 仍按
+    # 旧量纲取 0.5 会让配准项直接压过信息项(实测 S/low 上 reg/info 达 126%)。
+    # 与 _pick() 的单步 min-max 归一同一条纪律。
+    if not raw:
+        return []
+    info_scale = max(r[2] for r in raw) or 1.0
+    out: list[CandidateScore] = []
+    for view_id, pos_t, info_raw, rr, ov, dg, o_v, q in raw:
+        info = info_raw / info_scale
+        reg_gain = cfg.lambda_reg * rr if cfg.use_reg_term else 0.0
         out.append(CandidateScore(
-            view_id=str(cand.view_id), position=tuple(pos.tolist()),
-            value=float(value), info_gain=info, reg_gain=float(reg_gain),
+            view_id=view_id, position=pos_t,
+            value=float(info + reg_gain - cfg.eta * o_v),
+            info_gain=float(info), reg_gain=float(reg_gain),
             overlap=float(ov), degen=float(dg), r_reg=float(rr), q_row=q,
         ))
     out.sort(key=lambda s: s.value, reverse=True)

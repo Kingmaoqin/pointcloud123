@@ -521,7 +521,8 @@ def _select_next_station(world: SimWorld, obs: ObsState, cfg: EpisodeConfig,
 
     if method == "B1_patent":
         # 母专利(24)(25)原样
-        ranked = score_candidates(scores, cand, {"max_range_m": world.sensor.r_max})
+        ranked = score_candidates(scores, cand, {"max_range_m": world.sensor.r_max,
+                                                 "r_opt_m": world.sensor.r_opt})
         if ranked.empty or float(ranked.iloc[0]["value"]) <= 0:
             return None
         for row in ranked.itertuples(index=False):
@@ -538,11 +539,14 @@ def _select_next_station(world: SimWorld, obs: ObsState, cfg: EpisodeConfig,
     cs = score_candidates_v2(scores, cand, plan_oracle, world.sampler,
                              world.sensor, C, v2cfg)
     if not cs and v2cfg.use_reg_term:
-        # 硬约束 O^reg<O_min 全灭(早期覆盖过低)→ 软回退: 去掉重叠门重评
+        # 硬约束 O^reg<O_min 全灭(早期覆盖过低)→ 软回退: 只放松剔除条件。
+        # 不能靠把 o_min 调成 1e-9 来实现: r_reg = clip(O/o_min,0,1)·(1−Degen)
+        # 在 o_min→0 时 clip 恒为 1, 等于把 R^reg 整个换成 (1−Degen), 配准感知
+        # 项的语义就没了。用 o_min_gate 单独控制门槛, r_reg 仍按原 o_min 计算。
         import dataclasses
         cs = score_candidates_v2(scores, cand, plan_oracle, world.sampler,
                                  world.sensor, C,
-                                 dataclasses.replace(v2cfg, o_min=1e-9))
+                                 dataclasses.replace(v2cfg, o_min_gate=1e-9))
     if not cs:
         return None
     if method == "B5_occ_rng":

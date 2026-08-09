@@ -143,6 +143,11 @@ def score_candidates(patch_scores: pd.DataFrame, candidates: pd.DataFrame, view_
     frontality_min = float((view_config or {}).get("frontality_min", 0.35))
     fov_deg = float((view_config or {}).get("field_of_view_deg", 90.0))
     max_range = float((view_config or {}).get("max_range_m", 20.0))
+    # 距离核须绑在传感器最优距离上, 不能写死室内量级的 2.5 m —— 缺省 2.5 配
+    # (4, 8, 14) m 的户外候选距离档时, d=8 m 的权重只有 d=4 m 的 1/45、d=14 m
+    # 的 1/2200 万, 等于 B1 生成了远档候选却给它们打零分, 有效半径只剩约 6 m。
+    r_opt = float((view_config or {}).get("r_opt_m", 2.5))
+    sigma_d = 0.4 * r_opt
     if not 0 < fov_deg <= 180:
         raise ValueError("field_of_view_deg must be in (0, 180]")
     if max_range <= 0:
@@ -234,7 +239,12 @@ def score_candidates(patch_scores: pd.DataFrame, candidates: pd.DataFrame, view_
         vis_is_high = patch_is_high_gap[visible_mask]
 
         # Quality components
-        dist_quality = np.exp(-((vis_dists - 2.5) ** 2) / (2 * 2.0 ** 2))
+        # 距离核须绑在传感器最优距离上。原写死 2.5 m / σ=2.0 是室内量级, 而
+        # OPEN_ISSUES #15 已把候选距离档改成户外的 (4, 8, 14) m 却没同步改这里:
+        # 那组常数下 d=8 m 的权重只有 d=4 m 的 1/45、d=14 m 的 1/2200 万, 也就是
+        # B1 生成了 8 m 与 14 m 档的候选却给它们打零分, 有效工作半径只剩约 6 m。
+        # 这会把 B1 变成稻草人 —— 它在户外失效不该归因于"母专利方法弱"。
+        dist_quality = np.exp(-((vis_dists - r_opt) ** 2) / (2 * sigma_d ** 2))
         res_quality = np.clip(1.0 / (1.0 + 0.15 * vis_dists), 0.0, 1.0)
         q = vis_front * dist_quality * res_quality
 
