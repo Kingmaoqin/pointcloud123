@@ -480,11 +480,53 @@ class EpisodeConfig:
     # 关闭时所有站无条件拼合, 公式(36)-(40) 预测的量在世界里不存在。
     registration_realism: bool = False
     reg_tol_m: float = 0.05
-    # 闭环中"本轮执行哪一站"的策略（见 docs/闭环执行策略升级.md）：
-    #   "tsp_first"    公式(45)原定：执行 TSP 路线首站（为走完整条路线而排序）
+    # 闭环中"本轮执行哪一站"的策略：
+    #   "tsp_first"    公式(45)原定：执行 TSP 路线首站
     #   "greedy_first" 执行懒惰贪心的首选（性价比最高者）
     #   "j_step"       执行使单步 J 增量最大者（公式(44) 的单步形式）
-    exec_policy: str = "j_step"
+    #
+    # 默认取公式(45) 原定的 tsp_first。曾一度改为 j_step, 理由是"TSP 是为走完
+    # 整条路线排序的, 闭环每轮只执行一站, 取首站等于系统性挑最近而非最有价值"
+    # —— 该推理看着合理, 但唯一的 A/B 证据(种子 10–14, 45 次运行,
+    # results/archive/exec_policy_ab_pre14dfe35/summary.md) **在每一项上都反对
+    # 它**: tsp_first 的 awc 0.977 vs 0.967、关键设备召回 0.956 vs 0.924、
+    # 路径 153 m vs 230 m、单位路径增益 p_holm=0.0006。当时代码注释还援引了一份
+    # 名为 docs/闭环执行策略升级.md 的文档, 而它在 git 全历史中从不存在, 引用的
+    # "边际增益只有 1/5～1/2"来自场景哈希缺陷修复前采集、其后已作废的诊断。
+    #
+    # 与 lambda_e_value 同一条纪律: 数学上说得通、实验不支持的改动不进默认路径。
+    exec_policy: str = "tsp_first"
+
+
+def _bim_offline_plan(world: SimWorld, plan_oracle, rng,
+                      n_sites: int = 60) -> list[tuple[float, float]]:
+    """对 BIM 表面做一次性贪心集合覆盖, 返回按覆盖增益排序的站位序列。
+
+    只用设计 BIM 的几何可见性, 不看覆盖率、不看缺口分数、不看实测点云。
+    """
+    free = np.argwhere(world.grid._compute_free())
+    idx = rng.permutation(len(free))[:n_sites]
+    sites = [world.grid.to_xy(tuple(free[i])) for i in idx]
+    pids = [int(v) for v in world.patches["patch_id"].to_numpy()]
+    w = (world.patches["area"].to_numpy()
+         * (1.0 + world.patches["engineering_importance"].to_numpy()))
+    vis = []
+    for xy in sites:
+        o = np.array([xy[0], xy[1], TRIPOD_Z])
+        vmap = plan_oracle.visibility_batch(o, world.sampler, pids, sensor=world.sensor)
+        vis.append(np.array([vmap.get(p, 0.0) for p in pids]))
+    V = np.stack(vis, axis=1) if vis else np.zeros((len(pids), 0))
+    order, remaining = [], np.ones(len(pids))
+    for _ in range(len(sites)):
+        gain = (w * remaining)[:, None] * V
+        tot = gain.sum(axis=0)
+        tot[order] = -1.0
+        k = int(np.argmax(tot))
+        if tot[k] <= 0:
+            break
+        order.append(k)
+        remaining = remaining * (1.0 - V[:, k])
+    return [sites[k] for k in order]
 
 
 def _select_next_station(world: SimWorld, obs: ObsState, cfg: EpisodeConfig,
@@ -512,6 +554,27 @@ def _select_next_station(world: SimWorld, obs: ObsState, cfg: EpisodeConfig,
             d, _ = world.grid.astar(v0_xy, xy)
             if np.isfinite(d) and d <= budget_left:
                 return np.array([xy[0], xy[1], TRIPOD_Z]), d
+        return None
+
+    if method == "Bbim_offline":
+        # 纯 BIM 离线覆盖规划: 工业 TLS 站位规划的现有技术主流, 也是审查阶段最
+        # 可能被引作对比文件的一类。它只用设计 BIM 做一次性可见性集合覆盖, **不读
+        # 任何实测证据**(不知道哪里缺、也不知道现场多了什么), 因此站位在第一轮就
+        # 全部定死, 后续轮次按顺序执行, 不重规划。
+        # 没有这条线, "用实测缺口证据 + 在线遮挡发现优于纯 BIM 离线规划"这个技术
+        # 效果在实审阶段站不住。
+        plan = getattr(obs, "_bbim_plan", None)
+        if plan is None:
+            plan = _bim_offline_plan(world, plan_oracle, rng)
+            obs._bbim_plan = plan
+        for k, xy in enumerate(plan):
+            if k in getattr(obs, "_bbim_used", set()):
+                continue
+            d = float(world.grid.distance_field(v0_xy)[world.grid.to_ij(xy)])
+            if not np.isfinite(d) or d > budget_left:
+                continue
+            obs._bbim_used = getattr(obs, "_bbim_used", set()) | {k}
+            return np.array([xy[0], xy[1], TRIPOD_Z]), d
         return None
 
     if method == "Bdisp_maxmin":
@@ -619,10 +682,8 @@ def _select_next_station(world: SimWorld, obs: ObsState, cfg: EpisodeConfig,
     # 时限搜索每轮要跑满 3 s（实测占单次 episode 用时的 26%），故按需调用。
     route = solve_tsp(D, start=0, time_limit_s=3) if cfg.exec_policy == "tsp_first" else []
 
-    # 本轮实际执行哪一站。公式(45)原定取 TSP 路线首站，但 TSP 是为"走完整条
-    # 路线"排序的；闭环每轮只执行一站即重规划，取 TSP 首站等于系统性地挑最近
-    # 而非最有价值的站。实测（docs/闭环执行策略升级.md）：在 B10 表现最差的场景中，
-    # TSP 首站每轮的边际增益仅为贪心首选的 1/5～1/2。故默认改为单步 J 最大。
+    # 本轮实际执行哪一站。默认 tsp_first 即公式(45) 原定做法, 见 EpisodeConfig
+    # .exec_policy 处对 A/B 证据的说明。
     # 只在预算内付得起的站里选。公式(42) 的 cost 是**时间当量**
     # (dist + t_scan·v_move), 而 length_max_m 是**纯路径**预算; 懒惰贪心的预算
     # 又按 budget_left + n_left·scan_equiv 抬高过, 两者只在恰好选满 n_left 站时

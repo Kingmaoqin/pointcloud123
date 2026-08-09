@@ -29,7 +29,8 @@ from patent_gap.simulation.closed_loop_v2 import (  # noqa: E402
 )
 from patent_gap.simulation.scene_gen import generate_scene  # noqa: E402
 
-METHODS = ["B0_random", "Bdisp_maxmin", "B1_patent", "B5_occ_rng", "B10_full"]
+METHODS = ["B0_random", "Bdisp_maxmin", "Bbim_offline", "B1_patent",
+           "B5_occ_rng", "B10_full"]
 
 from patent_gap.planning.objective import (  # noqa: E402
     T_SCAN_DEFAULT as T_SCAN, V_MOVE_DEFAULT as V_MOVE,
@@ -191,8 +192,9 @@ def summarize(out_root: Path, config: dict, cfg_hash: str, commit: str) -> None:
         return np.asarray(pairs1, float), np.asarray(pairs2, float)
 
     tests = []
-    for baseline in ["B0_random", "Bdisp_maxmin", "B1_patent", "B5_occ_rng"]:
-        # 预注册: 主指标族 = awc × 4 个基线(共 4 个检验)。其余指标作描述性报告,
+    for baseline in ["B0_random", "Bdisp_maxmin", "Bbim_offline", "B1_patent",
+                     "B5_occ_rng"]:
+        # 预注册: 主指标族 = {awc, asset_recovery} × 4 个基线(共 8 个检验)。
         # 不进 Holm 族 —— 把 awc 的三个近似变换(ig_per_m=awc/L, awc_per_1000s=
         # awc/T)塞进同一族, 既稀释主指标又给同一效应三次机会; 而 awc_per_1000s
         # 与 B10 内部的 cost=dist+t_scan·v_move 同构(T=2·Σcost), 本就不能作独立

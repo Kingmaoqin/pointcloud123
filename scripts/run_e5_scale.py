@@ -58,7 +58,7 @@ from patent_gap.simulation.closed_loop_v2 import (  # noqa: E402
 )
 from patent_gap.simulation.scene_gen import generate_scene  # noqa: E402
 
-METHODS = ["Bdisp_maxmin", "B5_occ_rng", "B10_full"]
+METHODS = ["Bdisp_maxmin", "Bbim_offline", "B5_occ_rng", "B10_full"]
 FAMILIES = ["S", "M", "L"]
 DENSITIES = ["low", "mid", "high"]
 SEEDS = [0, 1, 2]
