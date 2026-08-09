@@ -1,16 +1,17 @@
-[e6] commit=30ed463-dirty  真实场景 {"vertices": 604187, "triangles": 1197750, "components": 256, "patches": 7019, "extent_m": [18.2, 24.49], "total_area_m2": 3836.5, "by_ifc_class": {"IfcFurnishingElement": 66, "IfcWallStandardCase": 61, "IfcOpeningElement": 54, "IfcWindow": 44, "IfcColumn": 10, "IfcCovering": 7, "IfcDoor": 6, "IfcSlab": 5, "IfcStairFlight": 2, "IfcBuildingElementProxy": 1}}
-[e6] SimWorld 构建 38s
-[e6] 缺口数: measured=748 synthetic=699 / 7019 分块; 实测覆盖均值 0.319
-[e6] measured  Bdisp_maxmin   awc=0.654 asset=0.652 crit=0.763 stop=rounds (3.6s)
-[e6] measured  Bbim_offline   awc=0.654 asset=0.649 crit=0.763 stop=rounds (3.8s)
-[e6] measured  B1_patent      awc=0.653 asset=0.647 crit=0.763 stop=no_candidate (5.3s)
-[e6] measured  B5_occ_rng     awc=0.654 asset=0.650 crit=0.763 stop=no_candidate (8.0s)
-[e6] measured  B10_full       awc=0.653 asset=0.647 crit=0.763 stop=no_candidate (14.1s)
-[e6] measured  B11_disc       awc=0.653 asset=0.647 crit=0.763 stop=no_candidate (15.7s)
-[e6] synthetic Bdisp_maxmin   awc=0.025 asset=0.108 crit=0.047 stop=rounds (3.5s)
-[e6] synthetic Bbim_offline   awc=0.022 asset=0.064 crit=0.047 stop=rounds (3.8s)
-[e6] synthetic B1_patent      awc=0.019 asset=0.039 crit=0.047 stop=no_candidate (6.0s)
-[e6] synthetic B5_occ_rng     awc=0.022 asset=0.075 crit=0.047 stop=no_candidate (8.4s)
-[e6] synthetic B10_full       awc=0.019 asset=0.045 crit=0.047 stop=no_candidate (14.2s)
-[e6] synthetic B11_disc       awc=0.019 asset=0.045 crit=0.047 stop=no_candidate (15.1s)
+[e6] commit=795df72-dirty  真实场景 {"vertices": 604187, "triangles": 1197750, "components": 256, "patches": 7019, "extent_m": [18.2, 24.49], "total_area_m2": 3836.5, "by_ifc_class": {"IfcFurnishingElement": 66, "IfcWallStandardCase": 61, "IfcOpeningElement": 54, "IfcWindow": 44, "IfcColumn": 10, "IfcCovering": 7, "IfcDoor": 6, "IfcSlab": 5, "IfcStairFlight": 2, "IfcBuildingElementProxy": 1}}
+[e6] SimWorld 构建 37s
+[e6] 缺口数: measured=748 synthetic=395 / 7019 分块; 实测覆盖均值 0.319
+[e6] 预算 28 站 (构件 256, 参考普查 29 站)
+[e6] measured  Bdisp_maxmin   awc=0.908 asset=0.964 crit=0.956 stop=rounds (22.5s)
+[e6] measured  Bbim_offline   awc=0.938 asset=0.947 crit=0.921 stop=rounds (8.1s)
+[e6] measured  B1_patent      awc=0.851 asset=0.889 crit=0.877 stop=rounds (83.6s)
+[e6] measured  B5_occ_rng     awc=0.973 asset=0.981 crit=0.974 stop=rounds (1019.5s)
+[e6] measured  B10_full       awc=0.959 asset=0.981 crit=0.956 stop=rounds (1260.3s)
+[e6] measured  B11_disc       awc=0.959 asset=0.981 crit=0.956 stop=rounds (1257.5s)
+[e6] synthetic Bdisp_maxmin   awc=0.454 asset=0.839 crit=0.583 stop=rounds (22.6s)
+[e6] synthetic Bbim_offline   awc=0.721 asset=0.733 crit=0.417 stop=rounds (9.1s)
+[e6] synthetic B1_patent      awc=0.138 asset=0.468 crit=0.083 stop=rounds (83.3s)
+[e6] synthetic B5_occ_rng     awc=0.874 asset=0.871 crit=0.750 stop=rounds (1002.2s)
+[e6] synthetic B10_full       awc=0.797 asset=0.879 crit=0.625 stop=rounds (1258.7s)
+[e6] synthetic B11_disc       awc=0.797 asset=0.879 crit=0.625 stop=rounds (1259.2s)
 [e6] summary → /home/xqin5/patent_gap_nbv/results/exp6/summary.md
