@@ -14,13 +14,29 @@ from .route import route_length
 from .set_select import coverage_value
 
 
+# 作业时间标定的**唯一来源**。此前 v_move/t_scan 硬编码在五处(闭环的
+# scan_equiv、本文件、run_e2/e3/e5 各一处), 改一处不改另一处会让预算与评价
+# 悄悄脱钩 —— 公式(42) 的 cost 与时间归一指标必须用同一组常数。
+V_MOVE_DEFAULT = 0.5      # m/s 三脚架搬站步行速度
+T_SCAN_DEFAULT = 180.0    # s   单站架设 + 扫描耗时
+
+
+def episode_time_s(path_len_m: float, n_stations: int,
+                   v_move: float = V_MOVE_DEFAULT,
+                   t_scan: float = T_SCAN_DEFAULT) -> float:
+    """T = 路径/v_move + 站数·t_scan。评价与预算共用。"""
+    return float(path_len_m) / v_move + float(n_stations) * t_scan
+
+
 @dataclass
 class ObjectiveParams:
-    lambda_reg: float = 0.3
+    # 与 V2Config.lambda_reg 保持一致。两处曾各取 0.5 / 0.3, 而同一次选站决策
+    # 的两个环节(候选打分与单步 J)分别用其中一个, 表达的设计意图并不相同。
+    lambda_reg: float = 0.5
     lambda_len: float = 0.4
     lambda_sta: float = 0.2
-    v_move: float = 0.5       # m/s
-    t_scan: float = 180.0     # s/站
+    v_move: float = V_MOVE_DEFAULT
+    t_scan: float = T_SCAN_DEFAULT
     m_max: int = 8
 
 

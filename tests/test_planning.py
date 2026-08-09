@@ -53,11 +53,14 @@ def test_trajectory_objective_44():
     r_reg_v = np.array([0.7, 0.4])
     D = np.array([[0, 5, 8], [5, 0, 4], [8, 4, 0]], dtype=float)  # 0=v0
     route = [0, 1, 2]
+    par = ObjectiveParams(m_max=8)
     out = trajectory_objective(c_jv, gains, r_reg_v, D, route, l_diag=50.0,
-                               params=ObjectiveParams(m_max=8))
+                               params=par)
     assert abs(out["F"] - (1.0 * 0.8 + 2.0 * 0.9)) < 1e-9
     assert abs(out["path_length_m"] - 9.0) < 1e-9
     assert out["n_stations"] == 2
-    expect_j = (2.6 / 3.0) + 0.3 * 0.4 - 0.4 * 9.0 / 50.0 - 0.2 * 2 / 8
+    # 系数取自 params 而非字面量: 写死会在默认值调整时静默失配
+    expect_j = ((2.6 / 3.0) + par.lambda_reg * 0.4 - par.lambda_len * 9.0 / 50.0
+                - par.lambda_sta * 2 / 8)
     assert abs(out["J"] - expect_j) < 1e-9
     assert abs(out["time_s"] - (9.0 / 0.5 + 2 * 180.0)) < 1e-9

@@ -18,7 +18,9 @@ from ..mapping.traversability import TravGrid
 from ..occlusion.discovery import UnmodeledOccluders
 from ..occlusion.raycast import OcclusionOracle
 from ..occlusion.sampling import PatchSampler
-from ..planning.objective import ObjectiveParams
+from ..planning.objective import (
+    T_SCAN_DEFAULT, V_MOVE_DEFAULT, ObjectiveParams, episode_time_s,
+)
 from ..planning.route import solve_tsp
 from ..planning.set_select import lazy_greedy
 from ..registration.predictor import degeneracy, expected_overlap, r_reg, split_regions
@@ -323,7 +325,23 @@ def build_ground_truth(world: SimWorld, init_masks: list[dict[int, np.ndarray]],
     C_init = np.array([accI[pid].mean() if accI[pid] is not None and len(accI[pid]) else 0.0
                        for pid in pids])
     y = C_init < 0.5 * C_gt
+    # 参考普查(S_full 8 m 均匀网格全部站真扫一遍)所达到的密度达标率。没有它,
+    # 0.43(L) 与 0.56(S) 的差别无法区分"方法不好"和"仿真角步长不够" ——
+    # 0.4° 步长下 30 m 处物理上限只有 22.8 点/m², 无论怎么架站都到不了 ρ_req。
+    # 注意这不是物理上限: 均匀网格站位固定, 而规划器会主动贴近表面, 因此比值
+    # 可以大于 1(实测 S/low 上 6 站规划 0.584 vs 13 站普查 0.468, 即 125%)。
+    n_full = np.zeros(len(pids))
+    idx = {int(pid): k for k, pid in enumerate(pids)}
+    for k, o in enumerate(full_origins):
+        scan = world.sim.scan(o, f"full_{k}", seed=k)
+        if scan.hit_patch is None:
+            continue
+        u, c = np.unique(scan.hit_patch[scan.hit_patch >= 0], return_counts=True)
+        for pid, cnt in zip(u, c):
+            if int(pid) in idx:
+                n_full[idx[int(pid)]] += cnt
     return {"C_gt": C_gt, "C_init": C_init, "y": y,
+            "n_pts_full": n_full,
             "n_full_stations": len(full_origins)}
 
 
@@ -345,6 +363,13 @@ def episode_metrics(world: SimWorld, gt: dict, C_now: np.ndarray,
     awc = float((rec[y] * w[y]).sum() / max(w[y].sum(), 1e-9)) if y.any() else float("nan")
     rho_req = rho_required(imp, rho0, lambda_e)
     dens_ok = float(((n_pts / np.maximum(area, 1e-9)) >= rho_req).mean())
+    # 相对参考普查归一, 使 dens_ok 跨场景可比
+    n_full_pts = gt.get("n_pts_full")
+    if n_full_pts is not None:
+        ref = float(((np.asarray(n_full_pts) / np.maximum(area, 1e-9)) >= rho_req).mean())
+        dens_ok_rel = dens_ok / ref if ref > 1e-9 else float("nan")
+    else:
+        ref, dens_ok_rel = float("nan"), float("nan")
     crit = y & (imp >= 0.8)
     crit_recall = float((C_now[crit] >= 0.5 * C_gt[crit]).mean()) if crit.any() else float("nan")
     # 按 BIM 构件等权的恢复率。awc 以面积加权, 实测在 S/low 上 4 个主变面 +
@@ -362,6 +387,8 @@ def episode_metrics(world: SimWorld, gt: dict, C_now: np.ndarray,
         "awc_gap_recovery": awc,
         "asset_recovery": asset_recovery,
         "dens_ok": dens_ok,
+        "dens_ok_full_ref": ref,
+        "dens_ok_vs_full": dens_ok_rel,
         "crit_recall": crit_recall,
         "path_len_m": float(path_len),
         "n_stations": int(n_stations),
@@ -566,7 +593,7 @@ def _select_next_station(world: SimWorld, obs: ObsState, cfg: EpisodeConfig,
     c_jv = np.stack([s.q_row for s in cs], axis=1)
     # cost_v = A*距离 + t_scan·v_move 当量(时间折算为等效距离, 单一预算维度);
     # 缺少扫描当量会让比值贪心过度偏好近站(原地重扫), 见 3.6 节
-    scan_equiv = 180.0 * 0.5
+    scan_equiv = T_SCAN_DEFAULT * V_MOVE_DEFAULT
     dist_v0 = np.array([float(cand.loc[cand["view_id"] == s.view_id, "astar_from_v0"].iloc[0])
                         for s in cs])
     cost = dist_v0 + scan_equiv
@@ -714,8 +741,7 @@ def run_episode(world: SimWorld, init_origins: list[np.ndarray],
             "history": history, "final": final, "registration": reg_log, "status": "ok"}
 
 
-def default_init_stations(world: SimWorld, n: int = 4,
-                          spacing: float = 18.0) -> list[np.ndarray]:
+def default_init_stations(world: SimWorld, n: int = 4) -> list[np.ndarray]:
     """S_init: 沿主干道路等距撒站, 故意不进入间隔内部(1.2.4)。"""
     xmin, _, xmax, _ = world.scene.bounds_xy
     y = world.scene.road_y
