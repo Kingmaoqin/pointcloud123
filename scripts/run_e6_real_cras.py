@@ -90,6 +90,8 @@ def main() -> None:
     ap.add_argument("--methods", nargs="*", default=METHODS)
     ap.add_argument("--gt-modes", nargs="*", default=GT_MODES)
     ap.add_argument("--lambda-reg", type=float, default=0.5)
+    ap.add_argument("--exec-policy", default="tsp_first",
+                    choices=["tsp_first", "greedy_first", "j_step"])
     ap.add_argument("--tag", default="")
     args = ap.parse_args()
     out_root = Path(args.out)
@@ -135,7 +137,7 @@ def main() -> None:
            "cand_distances": list(args.cand_distances),
            "cand_grid_spacing": args.cand_grid,
            "methods": args.methods, "tag": args.tag,
-           "lambda_reg": args.lambda_reg,
+           "lambda_reg": args.lambda_reg, "exec_policy": args.exec_policy,
            "gt_modes": args.gt_modes, "scene": report}
     cfg_hash = hashlib.sha1(json.dumps(cfg, sort_keys=True, default=str).encode()).hexdigest()[:10]
 
@@ -158,7 +160,8 @@ def main() -> None:
                                    cand_distances=tuple(args.cand_distances),
                                    cand_grid_spacing=args.cand_grid,
                                    cand_r_dup=args.r_dup,
-                                   lambda_reg=args.lambda_reg)
+                                   lambda_reg=args.lambda_reg,
+                                   exec_policy=args.exec_policy)
                 res = run_episode(world, init, ep, gt=gt)
                 res["status"] = "ok"
             except Exception as e:
