@@ -1,0 +1,61 @@
+{
+ "config_hash": "67dd8a3927",
+ "git_commit": "da706f4-dirty",
+ "scene": {
+  "vertices": 604187,
+  "triangles": 1197750,
+  "components": 256,
+  "patches": 7019,
+  "extent_m": [
+   18.2,
+   24.49
+  ],
+  "total_area_m2": 3836.5,
+  "by_ifc_class": {
+   "IfcFurnishingElement": 66,
+   "IfcWallStandardCase": 61,
+   "IfcOpeningElement": 54,
+   "IfcWindow": 44,
+   "IfcColumn": 10,
+   "IfcCovering": 7,
+   "IfcDoor": 6,
+   "IfcSlab": 5,
+   "IfcStairFlight": 2,
+   "IfcBuildingElementProxy": 1
+  }
+ },
+ "rows": [
+  {
+   "gt_mode": "measured",
+   "method": "B10_full",
+   "status": "ok",
+   "awc_gap_recovery": 0.9581192208646964,
+   "asset_recovery": 0.9804726636127598,
+   "dens_ok": 0.20002849408747686,
+   "dens_ok_full_ref": 0.14688702094315428,
+   "dens_ok_vs_full": 1.3617846750727451,
+   "crit_recall": 0.956140350877193,
+   "path_len_m": 369.7670273047587,
+   "n_stations": 28,
+   "ig_per_m": 0.0025911429362657124,
+   "stop_reason": "rounds",
+   "T_total_s": 5779.534054609518
+  },
+  {
+   "gt_mode": "synthetic",
+   "method": "B10_full",
+   "status": "ok",
+   "awc_gap_recovery": 0.7965340438005288,
+   "asset_recovery": 0.8802998582265285,
+   "dens_ok": 0.20002849408747686,
+   "dens_ok_full_ref": 0.14688702094315428,
+   "dens_ok_vs_full": 1.3617846750727451,
+   "crit_recall": 0.625,
+   "path_len_m": 369.7670273047587,
+   "n_stations": 28,
+   "ig_per_m": 0.002154151086987084,
+   "stop_reason": "rounds",
+   "T_total_s": 5779.534054609518
+  }
+ ]
+}

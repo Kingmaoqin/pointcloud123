@@ -1,0 +1,56 @@
+{
+ "commit": "c631abc",
+ "rows": [
+  {
+   "seed": 0,
+   "n_viewpoints": 7,
+   "n_patches": 526,
+   "voxels": 647,
+   "bim_only": {
+    "over": 502,
+    "under": 0,
+    "mae": 0.1062982910674644
+   },
+   "with_discovery": {
+    "over": 10,
+    "under": 132,
+    "mae": 0.012283432653097226
+   },
+   "mae_ratio": 8.653793615310102
+  },
+  {
+   "seed": 1,
+   "n_viewpoints": 7,
+   "n_patches": 486,
+   "voxels": 551,
+   "bim_only": {
+    "over": 381,
+    "under": 0,
+    "mae": 0.07304348678971714
+   },
+   "with_discovery": {
+    "over": 0,
+    "under": 242,
+    "mae": 0.026743986703322762
+   },
+   "mae_ratio": 2.7312116028176896
+  },
+  {
+   "seed": 2,
+   "n_viewpoints": 7,
+   "n_patches": 522,
+   "voxels": 538,
+   "bim_only": {
+    "over": 407,
+    "under": 0,
+    "mae": 0.07949893337169563
+   },
+   "with_discovery": {
+    "over": 19,
+    "under": 188,
+    "mae": 0.019574925748090968
+   },
+   "mae_ratio": 4.061263597868242
+  }
+ ]
+}
