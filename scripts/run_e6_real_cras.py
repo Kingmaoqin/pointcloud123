@@ -68,13 +68,25 @@ def git_commit() -> str:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default=str(ROOT / "results/exp6"))
-    ap.add_argument("--stations", type=int, default=6)
+    ap.add_argument("--stations", type=int, default=0,
+                    help="0 = 按构件数缩放")
     ap.add_argument("--dtheta", type=float, default=0.6)
     # 室内标定: 参考站 8 m 网格在被墙分隔的房间里只落得下 3 站(C_gt 均值 0.048,
     # 真值本身退化); 候选环 (4,8,14) m 全部落进墙里。以下为 CRAS 尺度取值。
     ap.add_argument("--full-spacing", type=float, default=2.5)
     ap.add_argument("--cand-distances", nargs=3, type=float, default=[1.5, 3.0, 5.0])
     ap.add_argument("--cand-grid", type=float, default=3.0)
+    # 室内三脚架半径约 0.35 m; 0.6 m(户外轮式平台)会多吃掉 65 m² 自由空间
+    ap.add_argument("--r-robot", type=float, default=0.35)
+    # 障碍按三角面真实投影栅格化, 而非构件包围盒。实测把最大连通域从 28% 提到
+    # 79% —— 包围盒对变电站方箱设备够用, 对建筑的 L 形墙与门洞会连通路一起封死。
+    ap.add_argument("--aabb-obstacles", action="store_true",
+                    help="退回包围盒栅格化(仅用于与旧结果对照)")
+    # 排除半径 3.0 m 在 142 m² 的室内自由空间里六站就超过全部空间
+    ap.add_argument("--r-dup", type=float, default=1.0)
+    # 预算按构件数缩放(与 E5 同口径): 256 构件 / 9.3 ≈ 28 站。原先固定 6 站只有
+    # 参考普查(26 站)的 23%, "追不回缺口"与"预算不够"混在一起。
+    ap.add_argument("--stations-per-components", type=float, default=9.3)
     ap.add_argument("--methods", nargs="*", default=METHODS)
     ap.add_argument("--gt-modes", nargs="*", default=GT_MODES)
     args = ap.parse_args()
@@ -85,13 +97,16 @@ def main() -> None:
     sensor_cfg = {"dtheta_deg": args.dtheta, "r": [0.5, 10.0, 60.0], "sigma_r": 0.005}
     sensor = SensorModel.from_config(sensor_cfg)
     t0 = time.time()
-    world = SimWorld.build(scene, sensor, sim_dtheta_deg=args.dtheta)
+    world = SimWorld.build(scene, sensor, sim_dtheta_deg=args.dtheta,
+                           r_robot=args.r_robot,
+                           by_triangle=not args.aabb_obstacles)
     report = real_scene_report(scene, world.patches)
     print(f"[e6] commit={commit}  真实场景 {json.dumps(report, ensure_ascii=False)}",
           flush=True)
     print(f"[e6] SimWorld 构建 {time.time()-t0:.0f}s", flush=True)
 
-    init = default_init_stations(world, n=3)
+    # 室内无"主干道路", 必须用自由空间最大最小离散撒初始站
+    init = default_init_stations(world, n=3, spread=True)
     probe = ObsState(world=world)
     for k, o in enumerate(init):
         probe.add_station(o, f"init_{k}", seed=k)
@@ -108,11 +123,16 @@ def main() -> None:
           f"synthetic={int(gt_syn['y'].sum())} / {len(world.patches)} 分块; "
           f"实测覆盖均值 {C_meas.mean():.3f}", flush=True)
 
-    cfg = {"data": "CRAS labs@FEUP", "sensor": sensor_cfg, "rho_floor": RHO_FLOOR,
+    n_comp = int(world.patches["element_guid"].nunique())
+    n_st = args.stations or max(3, int(round(n_comp / args.stations_per_components)))
+    print(f"[e6] 预算 {n_st} 站 (构件 {n_comp}, 参考普查 {gt_syn['n_full_stations']} 站)",
+          flush=True)
+    cfg = {"data": "CRAS labs@FEUP", "stations_budget": n_st, "r_robot": args.r_robot,
+           "r_dup": args.r_dup, "sensor": sensor_cfg, "rho_floor": RHO_FLOOR,
            "full_spacing": args.full_spacing,
            "cand_distances": list(args.cand_distances),
            "cand_grid_spacing": args.cand_grid,
-           "stations_max": args.stations, "methods": args.methods,
+           "methods": args.methods,
            "gt_modes": args.gt_modes, "scene": report}
     cfg_hash = hashlib.sha1(json.dumps(cfg, sort_keys=True, default=str).encode()).hexdigest()[:10]
 
@@ -128,12 +148,13 @@ def main() -> None:
                 continue
             t1 = time.time()
             try:
-                ep = EpisodeConfig(stations_max=args.stations,
-                                   length_max_m=60.0 * args.stations,
-                                   rounds_max=args.stations, rho0=RHO_FLOOR,
+                ep = EpisodeConfig(stations_max=n_st,
+                                   length_max_m=30.0 * n_st,
+                                   rounds_max=n_st, rho0=RHO_FLOOR,
                                    seed=0, method=method,
                                    cand_distances=tuple(args.cand_distances),
-                                   cand_grid_spacing=args.cand_grid)
+                                   cand_grid_spacing=args.cand_grid,
+                                   cand_r_dup=args.r_dup)
                 res = run_episode(world, init, ep, gt=gt)
                 res["status"] = "ok"
             except Exception as e:

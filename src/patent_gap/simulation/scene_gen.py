@@ -268,9 +268,18 @@ def generate_scene(seed: int, family: str = "S", density: str = "mid",
     )
 
 
+# 可穿行的构件类别: 它们在 IFC 里是实体, 但对作业人员/移动平台而言是通路。
+# 户外变电站没有"房间", 所以流水线里从来没有这个概念 —— 而真实建筑里 IfcDoor
+# 是门扇(z 0.10–2.33 m), 按障碍处理会把每个房间封死: CRAS 实测自由空间被切成
+# 9–10 个互不连通的域, 最大的只占 28%, 从任一初始站 A* 到别处都不可达。
+PASSABLE_CLASSES = frozenset({"IfcDoor", "IfcOpeningElement", "IfcWindow"})
+
+
 def build_trav_grid(scene: SceneModel, res: float = 0.25,
                     r_robot: float = 0.6, h_robot: float = 1.8,
-                    z_step: float = 0.20):
+                    z_step: float = 0.20,
+                    passable_cls: frozenset[str] = PASSABLE_CLASSES,
+                    by_triangle: bool = False):
     """公式(43): 由场景构件构建 2.5D 可通行图。
 
     z_step: 顶面低于该高度的构件按"可跨越/可站立的地面"处理, 不计为障碍。
@@ -283,10 +292,41 @@ def build_trav_grid(scene: SceneModel, res: float = 0.25,
 
     grid = TravGrid(scene.bounds_xy, res=res, r_robot=r_robot)
     for c in scene.components:
-        if c.cls == "ground" or float(c.bbox_max[2]) <= z_step:
+        if (c.cls == "ground" or c.cls in passable_cls
+                or float(c.bbox_max[2]) <= z_step):
             continue
-        grid.add_obstacle_box(c.bbox_min[:2], c.bbox_max[:2],
-                              clearance_z=c.clearance_z, h_robot=h_robot)
+        if by_triangle:
+            _rasterize_component(grid, scene, c, z_step, h_robot)
+        else:
+            grid.add_obstacle_box(c.bbox_min[:2], c.bbox_max[:2],
+                                  clearance_z=c.clearance_z, h_robot=h_robot)
         if c.live and c.clearance_z < h_robot:
             grid.add_safety_zone(c.bbox_min[:2], c.bbox_max[:2], c.d_safe)
     return grid
+
+
+def _rasterize_component(grid, scene: SceneModel, c: Component,
+                         z_step: float, h_robot: float) -> None:
+    """按构件三角面在机器人身高带内的真实投影标记障碍。
+
+    包围盒对变电站的方箱设备够用, 对真实建筑不行: 一个构件可能是 L 形墙、带门洞
+    的墙、或跨越整栋楼的楼板边缘, 其包围盒会连同门洞与通道一起封死。逐三角面
+    投影只封住确实有实体的格子。
+    """
+    tri = scene.triangles[c.tri_start:c.tri_end]
+    if not len(tri):
+        return
+    v = scene.vertices[tri]                     # (T,3,3)
+    zmin, zmax = v[:, :, 2].min(axis=1), v[:, :, 2].max(axis=1)
+    keep = (zmax > z_step) & (zmin < h_robot)   # 只有挡在身高带里的才是障碍
+    if not keep.any():
+        return
+    v = v[keep][:, :, :2]
+    lo = np.array([grid.xmin, grid.ymin])
+    ij_lo = np.floor((v.min(axis=1) - lo) / grid.res).astype(int)
+    ij_hi = np.ceil((v.max(axis=1) - lo) / grid.res).astype(int)
+    for (i0, j0), (i1, j1) in zip(ij_lo, ij_hi):
+        i0 = max(i0, 0); j0 = max(j0, 0)
+        i1 = min(i1 + 1, grid.nx); j1 = min(j1 + 1, grid.ny)
+        if i1 > i0 and j1 > j0:
+            grid._obstacle[i0:i1, j0:j1] = True

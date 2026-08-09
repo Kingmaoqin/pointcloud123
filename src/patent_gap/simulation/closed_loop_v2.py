@@ -56,7 +56,11 @@ class SimWorld:
 
     @classmethod
     def build(cls, scene: SceneModel, sensor: SensorModel,
-              sim_dtheta_deg: float = 0.3) -> "SimWorld":
+              sim_dtheta_deg: float = 0.3, r_robot: float = 0.6,
+              by_triangle: bool = False) -> "SimWorld":
+        """r_robot: 移动平台半径, 决定可通行图的膨胀量。0.6 m 是户外轮式平台的
+        取值; 室内三脚架约 0.35 m, 实测在 CRAS 上把自由空间从 142 m² 放到
+        207 m²(建筑占地 446 m²), 直接决定候选池与站位分布。"""
         patches, tri_to_patch = build_scene_patches(scene)
         oracle = OcclusionOracle(scene.vertices, scene.triangles, tri_to_patch)
         # 规划器只有设计 BIM: 竣工态临时占位物挡得住扫描仪, 却挡不住规划器的
@@ -68,7 +72,7 @@ class SimWorld:
                        OcclusionOracle(scene.vertices, scene.triangles[bim],
                                        tri_to_patch[bim]))
         sampler = PatchSampler(scene.vertices, scene.triangles, tri_to_patch)
-        grid = build_trav_grid(scene)
+        grid = build_trav_grid(scene, r_robot=r_robot, by_triangle=by_triangle)
         sim = FallbackSimulator(scene.vertices, scene.triangles, tri_to_patch,
                                 sensor, sim_dtheta_deg=sim_dtheta_deg)
         return cls(scene=scene, patches=patches, tri_to_patch=tri_to_patch,
@@ -483,6 +487,9 @@ class EpisodeConfig:
     # project_to_free 失败后候选池坍缩。应随 r_opt 与场景尺度取值。
     cand_distances: tuple[float, ...] = (4.0, 8.0, 14.0)
     cand_grid_spacing: float = 10.0
+    # 已执行站的排除半径。3.0 m 是户外取值 —— 室内自由空间只有约 142 m², 每站
+    # 排除 π·3² = 28 m², 六站就超过全部自由空间, 候选池实测由 32 掉到 14。
+    cand_r_dup: float = 3.0
     # 是否用已测点云在线发现 BIM 未建模的遮挡物并修正规划遮挡模型(见
     # occlusion/discovery.py)。B11_disc 即 B10 + 该项。
     discover_occluders: bool = False
@@ -605,7 +612,7 @@ def _select_next_station(world: SimWorld, obs: ObsState, cfg: EpisodeConfig,
             i, j = free_cells[t]
             xy = np.asarray(world.grid.to_xy((i, j)), dtype=float)
             sep = float(np.min(np.linalg.norm(done - xy[None, :], axis=1))) if len(done) else 1e9
-            if sep <= best_score:
+            if sep < cfg.cand_r_dup or sep <= best_score:
                 continue
             d, _ = world.grid.astar(v0_xy, xy)
             if not np.isfinite(d) or d > budget_left:
@@ -621,6 +628,7 @@ def _select_next_station(world: SimWorld, obs: ObsState, cfg: EpisodeConfig,
     cand = _make_candidates(world, scores, v0_xy, rng,
                             distances=cfg.cand_distances,
                             grid_spacing=cfg.cand_grid_spacing,
+                            r_dup=cfg.cand_r_dup,
                             executed_xy=([s.origin[:2] for s in obs.scans]
                                          + list(failed_xy or [])))
     if cand.empty:
@@ -821,8 +829,41 @@ def run_episode(world: SimWorld, init_origins: list[np.ndarray],
             "history": history, "final": final, "registration": reg_log, "status": "ok"}
 
 
-def default_init_stations(world: SimWorld, n: int = 4) -> list[np.ndarray]:
-    """S_init: 沿主干道路等距撒站, 故意不进入间隔内部(1.2.4)。"""
+def default_init_stations(world: SimWorld, n: int = 4,
+                          spread: bool = False) -> list[np.ndarray]:
+    """S_init 初始站集。
+
+    spread=False: 沿主干道路等距撒站, 故意不进入间隔内部(1.2.4) —— 户外变电站
+        的作业习惯。
+    spread=True : 在可通行自由空间中做最大最小离散。室内必须用这个 —— 真实
+        建筑没有"主干道路", 沿 road_y 一条线撒站会让三站全挤在同一条走廊上
+        (CRAS 实测三站均落在 y≈8, 而建筑 y 向跨 24 m), 其余房间一站没有。
+    """
+    if spread:
+        free = world.grid._compute_free()
+        # 只在**最大连通域**内撒站。真实建筑的自由空间被墙分成多个互不连通的
+        # 房间(CRAS 实测 7–12 个域), 取全局最远点会把初始站放进彼此走不到的
+        # 房间, 之后从任一站 A* 到别处都不可达, 候选池当场清空。
+        try:
+            from scipy import ndimage
+            lab, n = ndimage.label(free)
+            if n > 1:
+                big = int(np.argmax(np.bincount(lab.ravel())[1:])) + 1
+                free = free & (lab == big)
+        except ImportError:
+            pass
+        cells = np.argwhere(free)
+        if not len(cells):
+            return []
+        pts = np.array([world.grid.to_xy(tuple(c)) for c in cells])
+        # 从质心最近点起步, 逐点取"离已选集最远者"
+        chosen = [int(np.argmin(np.linalg.norm(pts - pts.mean(axis=0), axis=1)))]
+        while len(chosen) < n:
+            d = np.min(np.linalg.norm(pts[:, None, :] - pts[chosen][None, :, :],
+                                      axis=2), axis=1)
+            chosen.append(int(np.argmax(d)))
+        return [np.array([pts[k][0], pts[k][1], TRIPOD_Z]) for k in chosen]
+
     xmin, _, xmax, _ = world.scene.bounds_xy
     y = world.scene.road_y
     xs = np.linspace(xmin + 5, xmax - 5, n)
