@@ -89,6 +89,8 @@ def main() -> None:
     ap.add_argument("--stations-per-components", type=float, default=9.3)
     ap.add_argument("--methods", nargs="*", default=METHODS)
     ap.add_argument("--gt-modes", nargs="*", default=GT_MODES)
+    ap.add_argument("--lambda-reg", type=float, default=0.5)
+    ap.add_argument("--tag", default="")
     args = ap.parse_args()
     out_root = Path(args.out)
     commit = git_commit()
@@ -132,14 +134,15 @@ def main() -> None:
            "full_spacing": args.full_spacing,
            "cand_distances": list(args.cand_distances),
            "cand_grid_spacing": args.cand_grid,
-           "methods": args.methods,
+           "methods": args.methods, "tag": args.tag,
+           "lambda_reg": args.lambda_reg,
            "gt_modes": args.gt_modes, "scene": report}
     cfg_hash = hashlib.sha1(json.dumps(cfg, sort_keys=True, default=str).encode()).hexdigest()[:10]
 
     for mode in args.gt_modes:
         gt = gt_meas if mode == "measured" else gt_syn
         for method in args.methods:
-            run_dir = out_root / mode / method
+            run_dir = out_root / mode / (method + args.tag)
             run_path = run_dir / "run.json"
             if run_path.exists():
                 prev = json.loads(run_path.read_text()).get("git_commit")
@@ -154,7 +157,8 @@ def main() -> None:
                                    seed=0, method=method,
                                    cand_distances=tuple(args.cand_distances),
                                    cand_grid_spacing=args.cand_grid,
-                                   cand_r_dup=args.r_dup)
+                                   cand_r_dup=args.r_dup,
+                                   lambda_reg=args.lambda_reg)
                 res = run_episode(world, init, ep, gt=gt)
                 res["status"] = "ok"
             except Exception as e:
@@ -177,7 +181,7 @@ def summarize(out_root: Path, cfg: dict, cfg_hash: str, commit: str, report: dic
     rows = []
     for mode in cfg["gt_modes"]:
         for method in cfg["methods"]:
-            p = out_root / mode / method / "run.json"
+            p = out_root / mode / (method + cfg.get("tag", "")) / "run.json"
             if not p.exists():
                 continue
             r = json.loads(p.read_text())

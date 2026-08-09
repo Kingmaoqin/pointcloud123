@@ -490,6 +490,9 @@ class EpisodeConfig:
     # 已执行站的排除半径。3.0 m 是户外取值 —— 室内自由空间只有约 142 m², 每站
     # 排除 π·3² = 28 m², 六站就超过全部自由空间, 候选池实测由 32 掉到 14。
     cand_r_dup: float = 3.0
+    # 公式(41) 配准支持项的权重。提成参数是为了能把"配准项"与"集合选择+TSP"
+    # 分开归因 —— 二者同为 B10 相对 B5 的差异来源。
+    lambda_reg: float = 0.5
     # 是否用已测点云在线发现 BIM 未建模的遮挡物并修正规划遮挡模型(见
     # occlusion/discovery.py)。B11_disc 即 B10 + 该项。
     discover_occluders: bool = False
@@ -649,7 +652,8 @@ def _select_next_station(world: SimWorld, obs: ObsState, cfg: EpisodeConfig,
     # v2 路径(B5/B10)
     v2cfg = V2Config(use_reg_term=(method != "B5_occ_rng"),
                      rho0=cfg.rho0, lambda_e=cfg.lambda_e,
-                     lambda_e_value=cfg.lambda_e_value)
+                     lambda_e_value=cfg.lambda_e_value,
+                     lambda_reg=cfg.lambda_reg)
     C = obs.coverage()
     cs = score_candidates_v2(scores, cand, plan_oracle, world.sampler,
                              world.sensor, C, v2cfg)
