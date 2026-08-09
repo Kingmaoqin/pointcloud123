@@ -330,7 +330,7 @@ def fig4() -> None:
                                  "ray blocked by discovered voxels\n→ predicted occluded"),
                  fontsize=7.2)
             _txt(ax, 7.2, 0.95, L(
-                "满足 d(x,T)>ε 且高度>z₀ 的回波点 → 体素化 → 并入规划用遮挡模型\n"
+                "满足 d(x,T)>eps 且高度>z0 的回波点 → 体素化 → 并入规划用遮挡模型\n"
                 "点线方格=发现体素（不携带分块归属，只作遮挡体，不是新的待扫目标）",
                 "returns with d(x,T)>eps and height>z0 -> voxelized -> merged into the model\n"
                 "dotted cells = discovered voxels (occluders only, never scan targets)"),

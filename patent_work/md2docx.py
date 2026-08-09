@@ -142,9 +142,13 @@ def convert(md: Path, out: Path) -> None:
         m = re.match(r"^(\s*)(\d+)\.\s+(.*)$", ln)
         if m:
             txt, i = _absorb(i, m.group(3))
-            p = doc.add_paragraph(style="List Number")
-            p.paragraph_format.left_indent = Pt(18 + 14 * (len(m.group(1)) // 2))
-            _emit_inline(p, txt)
+            # 用字面编号而非 List Number 样式：后者在 Word 里跨节连续编号，
+            # 会把某一节的 1. 渲染成 4.（实测发生在说明书第 11 节）。
+            p = doc.add_paragraph()
+            p.paragraph_format.left_indent = Pt(32 + 14 * (len(m.group(1)) // 2))
+            p.paragraph_format.first_line_indent = Pt(-14)
+            p.paragraph_format.space_after = Pt(2)
+            _emit_inline(p, f"{m.group(2)}. {txt}")
             continue
 
         if not ln.strip():
