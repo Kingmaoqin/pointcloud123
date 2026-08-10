@@ -53,6 +53,7 @@ class SimWorld:
     sim: FallbackSimulator
     sensor: SensorModel        # 仿真实际角步长的 Θ
     plan_oracle: OcclusionOracle | None = None   # 设计 BIM 几何: 规划器用
+    plan_grid: object | None = None              # 仅设计模型建立的可通行图
 
     # 规划环境模型的占据侧。None = 沿用由完整参考模型栅格化的可通行图(P100,
     # 即完整环境几何先验)；否则为观测驱动的三态栅格，S3/S6 一律改用它。
@@ -86,7 +87,13 @@ class SimWorld:
                                        tri_to_patch[prior]))
         ref_tris = prior
         sampler = PatchSampler(scene.vertices, scene.triangles, tri_to_patch)
+        # grid      竣工实景: 评测真值的参考站集与初始站要在这上面确实可站
+        # plan_grid 仅设计模型: 规划器不该绕开一批模型里查不到的临时占位物
+        # 二者在 n_temp=0 时逐比特相同, 既有 E2/E5/E6 结果不受影响。
         grid = build_trav_grid(scene, r_robot=r_robot, by_triangle=by_triangle)
+        plan_grid = (grid if all(c.in_bim for c in scene.components) else
+                     build_trav_grid(scene, r_robot=r_robot,
+                                     by_triangle=by_triangle, bim_only=True))
         env = None
         if observed_env:
             # 可通行空间改由观测建立: 初始全部 unknown, unknown 不当作 free。
@@ -101,13 +108,15 @@ class SimWorld:
         return cls(scene=scene, patches=patches, tri_to_patch=tri_to_patch,
                    oracle=oracle, sampler=sampler, grid=grid, sim=sim,
                    sensor=sim.effective_sensor(), plan_oracle=plan_oracle,
-                   env=env, ref_tris=ref_tris)
+                   plan_grid=plan_grid, env=env, ref_tris=ref_tris)
 
 
 def planning_map(world: SimWorld):
     """S3/S6 使用的可通行图。弱先验下为观测驱动的 M_plan，否则为完整模型栅格化
     所得的可通行图。集中一处取图，避免个别调用点漏改而偷偷读回完整模型。"""
-    return world.env if world.env is not None else world.grid
+    if world.env is not None:
+        return world.env
+    return world.plan_grid if world.plan_grid is not None else world.grid
 
 
 def station_sample_masks(world: SimWorld, origin: np.ndarray) -> dict[int, np.ndarray]:
@@ -547,6 +556,33 @@ class EpisodeConfig:
     #
     # 与 lambda_e_value 同一条纪律: 数学上说得通、实验不支持的改动不进默认路径。
     exec_policy: str = "tsp_first"
+    # 每执行一站, 记录该站的可见性预测误差与 M_plan 已知率(E7 用)。缺省关闭:
+    # 打开会对每站多做一次全 patch 的真值求交, 且会往 history 里加字段, 既有
+    # E2/E5/E6 结果集必须保持逐比特可复现, 故不进默认路径。
+    vis_audit: bool = False
+
+
+def vis_audit_at(world: SimWorld, plan_oracle, origin) -> dict:
+    """规划器在该站位上的可见性预测与实际的差距。
+
+    必须在把本站观测并入之前、用规划器当时实际使用的遮挡模型计算 —— 那才是它
+    据以决策的那个预测。三个量分开记:
+
+        vis_mae   平均绝对误差, 双向
+        vis_over  单向高估量 mean(max(pred-real, 0))。本发明所针对的错误是
+                  单向的(模型里没有的物体只会挡住真实扫描, 不会挡住预测),
+                  与 MAE 混在一起会被低估的那一侧稀释。
+        invalid   预测明确可见(≥0.5)而实际几乎全被挡住(<0.1)的目标分块占比 ——
+                  "白跑一趟"的直接计数口径。
+    """
+    pids = world.sampler.patch_ids()
+    pred = plan_oracle.visibility_batch(origin, world.sampler, pids, sensor=world.sensor)
+    real = world.oracle.visibility_batch(origin, world.sampler, pids, sensor=world.sensor)
+    p = np.array([pred[i] for i in pids], dtype=float)
+    r = np.array([real[i] for i in pids], dtype=float)
+    return {"vis_mae": float(np.mean(np.abs(p - r))),
+            "vis_over": float(np.mean(np.maximum(p - r, 0.0))),
+            "invalid_view_frac": float(np.mean((p >= 0.5) & (r < 0.1)))}
 
 
 def _bim_offline_plan(world: SimWorld, plan_oracle, rng,
@@ -845,6 +881,8 @@ def run_episode(world: SimWorld, init_origins: list[np.ndarray],
             stop_reason = "no_candidate"
             break
         origin, d = res
+        # 审计取值点: 此刻的 plan_oracle 正是规划器据以选中该站的那个遮挡模型
+        audit = vis_audit_at(world, plan_oracle, origin) if cfg.vis_audit else {}
         scan = obs.add_station(origin, f"{cfg.method}_r{rnd}", seed=cfg.seed * 100 + 50 + rnd)
         if cfg.registration_realism:
             ov, n_ovl, dg = obs.registration_of_last()
@@ -866,8 +904,14 @@ def run_episode(world: SimWorld, init_origins: list[np.ndarray],
         path_len += d
         executed += 1
         v0_xy = tuple(origin[:2])
-        history.append(episode_metrics(world, gt, obs.coverage(), obs.point_counts(),
-                                       path_len, executed, cfg.rho0, cfg.lambda_e))
+        m = episode_metrics(world, gt, obs.coverage(), obs.point_counts(),
+                            path_len, executed, cfg.rho0, cfg.lambda_e)
+        if cfg.vis_audit:
+            m.update(audit)
+            m["mplan_known_ratio"] = (float(env.known_ratio()) if env is not None
+                                      else 1.0)
+            m["reg_failed"] = bool(scan is None)
+        history.append(m)
     final = dict(history[-1])
     final["stop_reason"] = stop_reason
     if world.env is not None:

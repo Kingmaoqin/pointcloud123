@@ -318,7 +318,8 @@ def build_trav_grid(scene: SceneModel, res: float = 0.25,
                     r_robot: float = 0.6, h_robot: float = 1.8,
                     z_step: float = 0.20,
                     passable_cls: frozenset[str] = PASSABLE_CLASSES,
-                    by_triangle: bool = False):
+                    by_triangle: bool = False,
+                    bim_only: bool = False):
     """公式(43): 由场景构件构建 2.5D 可通行图。
 
     z_step: 顶面低于该高度的构件按"可跨越/可站立的地面"处理, 不计为障碍。
@@ -326,11 +327,19 @@ def build_trav_grid(scene: SceneModel, res: float = 0.25,
     CRAS 的 IfcSlab 就是楼板(z 顶面 0.10 m), 按障碍处理会把整个建筑底面填满,
     实测自由格为 0/7154, 参考站集一站都建不起来、缺口数恒为 0。用物理高度判据
     替代类别判据, 两种场景都成立(变电站的 ground 顶面为 0.0, 同样被跳过)。
+
+    bim_only: 只用设计模型中存在的构件建图。**规划器用的图必须置 True** ——
+    否则临时占位物(in_bim=False)会一并成为障碍, 规划器于是绕开了一批"设计
+    模型里根本查不到"的东西, 那是它不可能知道的信息。评测真值与初始站用的图
+    仍应置 False: 参考站集要physically可站, 测量员确实站不进一辆车里。
+    n_temp=0 时两者逐比特相同。
     """
     from ..mapping.traversability import TravGrid
 
     grid = TravGrid(scene.bounds_xy, res=res, r_robot=r_robot)
     for c in scene.components:
+        if bim_only and not c.in_bim:
+            continue
         if (c.cls == "ground" or c.cls in passable_cls
                 or float(c.bbox_max[2]) <= z_step):
             continue

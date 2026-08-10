@@ -126,6 +126,52 @@ def test_discovered_geometry_never_becomes_a_scan_target():
     assert (orc.tri_to_patch[n_base:] == -1).all()
 
 
+def test_planner_traversability_excludes_geometry_absent_from_the_model():
+    """规划器的可通行图不得含 in_bim=False 的竣工态临时占位物。
+
+    此前 build_trav_grid 遍历全部 components 而不看 in_bim，于是规划器绕开了
+    一批"设计模型里根本查不到"的施工车辆——它不可能知道它们在哪。n_temp=0 时
+    该泄漏不激活，既有 E2/E5/E6 因此逐比特不受影响。
+    """
+    sensor = SensorModel.from_config(SENSOR)
+    w0 = cl.SimWorld.build(generate_scene(seed=0, family="S", density="low"),
+                           sensor, sim_dtheta_deg=0.8)
+    assert w0.plan_grid is w0.grid, "无临时占位物时不得多建一张图"
+
+    scene = generate_scene(seed=0, family="S", density="low", n_temp=6)
+    w = cl.SimWorld.build(scene, sensor, sim_dtheta_deg=0.8)
+    assert w.plan_grid is not w.grid
+    free_plan = cl.planning_map(w)._compute_free()
+    free_real = w.grid._compute_free()
+    assert free_plan.sum() > free_real.sum(), "规划器反而比实景知道得更多"
+    # 临时占位物的中心在实景中不可通行，在规划图中却应当"看着能走"
+    temp = [c for c in scene.components if not c.in_bim]
+    assert temp
+    hit = 0
+    for c in temp:
+        xy = ((c.bbox_min[0] + c.bbox_max[0]) / 2, (c.bbox_min[1] + c.bbox_max[1]) / 2)
+        if not w.grid.is_free(xy) and cl.planning_map(w).is_free(xy):
+            hit += 1
+    assert hit > 0, "没有任何临时占位物体现出'规划器看不见'"
+
+
+def test_vis_audit_is_off_by_default_and_records_when_on():
+    """审计字段默认不出现——既有结果集必须逐比特可复现。"""
+    assert cl.EpisodeConfig().vis_audit is False
+    scene = generate_scene(seed=0, family="S", density="low", n_temp=6)
+    w = cl.SimWorld.build(scene, SensorModel.from_config(SENSOR), sim_dtheta_deg=0.8)
+    init = cl.default_init_stations(w, n=2)
+    cfg = cl.EpisodeConfig(stations_max=1, rounds_max=1, seed=0,
+                           method="B10_full", vis_audit=True)
+    r = cl.run_episode(w, init, cfg)
+    last = r["history"][-1]
+    for k in ("vis_mae", "vis_over", "invalid_view_frac", "mplan_known_ratio"):
+        assert k in last, k
+    assert last["vis_over"] >= 0.0
+    # 单向高估不得超过双向总误差
+    assert last["vis_over"] <= last["vis_mae"] + 1e-12
+
+
 def test_frontier_is_boundary_of_free_and_unknown():
     g = PlanningEnvGrid((0, 0, 10, 10), res=0.5, r_robot=0.0)
     assert len(g.frontier_cells()) == 0      # 全未知时没有 frontier
