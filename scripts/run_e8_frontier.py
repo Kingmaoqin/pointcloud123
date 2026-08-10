@@ -262,8 +262,51 @@ def summarize(out_root: Path, cfg: dict, levels: list, cfg_hash: str,
             out.append(f"| {lv} | {mt} | {m} | {d:+.4f} | "
                        f"[{lo:+.4f}, {hi:+.4f}] | {ph:.4f} |")
 
+    # 等站数对照。frontier 按自己的目标函数提前收工(候选池里再没有能揭示未知的
+    # 位置), 平均只用 3.9 站 / 101 m, 而本方法用满 5.8 站 / 132 m。不做这一节,
+    # "本方法赢"就有靠多花预算赢的嫌疑 —— 这里把本方法的轨迹截到与 frontier
+    # 相同的站数再比。
+    out.append("\n## 等站数对照（把本方法截到 frontier 实际用掉的站数）\n")
+    out.append("| 档 | 方法 | 资产恢复(截断) | frontier | Δ | 95%CI | p | 路径(截断) | frontier 路径 |")
+    out.append("|---|---|---|---|---|---|---|---|---|")
+    for level in L:
+        fr_runs = _runs(out_root, level, "Bfrontier", cfg)
+        for method in ("B10_full", "B11_disc"):
+            ours = _runs(out_root, level, method, cfg)
+            keys = sorted(set(fr_runs) & set(ours))
+            if len(keys) < 3:
+                continue
+            a, b, pa, pb = [], [], [], []
+            for k in keys:
+                n = int(fr_runs[k]["final"]["n_stations"])
+                h = ours[k]["history"]
+                i = min(n, len(h) - 1)
+                a.append(h[i]["asset_recovery"]); pa.append(h[i]["path_len_m"])
+                b.append(fr_runs[k]["final"]["asset_recovery"])
+                pb.append(fr_runs[k]["final"]["path_len_m"])
+            a, b = np.array(a), np.array(b)
+            lo, hi = bootstrap_ci(a - b, seed=0)
+            p = paired_permutation(a, b, seed=0)
+            out.append(f"| {level} | {method} | {a.mean():.3f} | {b.mean():.3f} | "
+                       f"{(a - b).mean():+.3f} | [{lo:+.3f}, {hi:+.3f}] | {p:.4f} | "
+                       f"{np.mean(pa):.1f} m | {np.mean(pb):.1f} m |")
+
     out_root.mkdir(parents=True, exist_ok=True)
     (out_root / "summary.md").write_text("\n".join(out) + "\n")
+
+
+def _runs(out_root: Path, level: str, method: str, cfg: dict) -> dict:
+    d = {}
+    for family, density in cfg["scenes"]:
+        for seed in cfg["seeds"]:
+            p = (out_root / level / method / f"scene_{family}_{density}"
+                 / str(seed) / "run.json")
+            if not p.exists():
+                continue
+            r = json.loads(p.read_text())
+            if r.get("status") == "ok":
+                d[(r["scene"], r["scene_seed"])] = r
+    return d
 
 
 if __name__ == "__main__":
