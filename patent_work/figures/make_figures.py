@@ -58,7 +58,7 @@ def fig1() -> None:
     """总体流程。S7b 的判定在 S7a 之前 —— 配准不可用时全局坐标不可信,
     因而不能据以判定'离设计模型超过 ε', S7a 整体不执行。"""
     fig, ax = plt.subplots(figsize=(8.4, 10.4))
-    ax.set_xlim(0, 12.4); ax.set_ylim(0, 15.2); ax.axis("off")
+    ax.set_xlim(-0.2, 13.0); ax.set_ylim(0, 15.2); ax.axis("off")
 
     def box(x, y, w, h, tag, label, fs=8):
         ax.add_patch(mp.FancyBboxPatch((x, y - h / 2), w, h,
@@ -118,35 +118,44 @@ def fig1() -> None:
     arr(8.8, 6.15, 8.0, 5.85)
 
     # 是 → S7a → S8
-    _txt(ax, 6.62, 4.72, L("是", "yes"), fontsize=8)
-    arr(6.3, 4.98, 6.3, 4.36)
-    box(2.6, 4.0, 7.4, 0.72, "S7a", L("在线发现模型外遮挡物 → 体素 U_k",
-                                      "S7a discover off-model occluders"))
-    arr(6.3, 3.64, 6.3, 3.02)
-    box(2.2, 2.66, 5.6, 0.72, "S8", L("并入规划用遮挡模型；更新缺口证据",
-                                      "S8 merge; update evidence"), 7.6)
+    _txt(ax, 5.32, 4.72, L("是", "yes"), fontsize=8)
+    arr(5.0, 4.98, 5.0, 4.36)
+    box(2.2, 4.0, 5.6, 0.72, "S7a", L("在线发现模型外遮挡物 → 体素 U_k",
+                                      "S7a discover off-model occluders"), 7.4)
+    arr(5.0, 3.64, 5.0, 3.09)
+    box(2.0, 2.66, 5.8, 0.86, "S8", L("并入规划用遮挡模型；更新缺口证据与任务分数；\n重新判定缺口表面分块",
+                                      "S8 merge; update evidence and scores;\nre-determine gap patches"), 7.0)
 
     # 否 → 保持不变
     _txt(ax, 9.3, 5.82, L("否", "no"), fontsize=8)
     ax.plot([8.8, 11.55], [5.55, 5.55], color="black", lw=1.3)
-    arr(11.55, 5.55, 11.55, 3.02, lw=1.3)
-    ax.plot([11.55, 11.3], [3.02, 3.02], color="black", lw=1.3)
-    box(8.25, 2.66, 3.35, 0.86, "", L("遮挡模型与缺口证据均保持不变；\n记录失败站位",
+    arr(11.55, 5.55, 11.55, 4.43, lw=1.3)
+    ax.plot([11.55, 11.85], [4.43, 4.43], color="black", lw=1.3)
+    arr(11.85, 4.43, 11.78, 4.0)
+    box(8.45, 4.0, 3.3, 0.86, "", L("遮挡模型与缺口证据均保持不变；\n记录失败站位",
                                       "model & evidence unchanged;\nrecord failed station"), 7.0)
 
     arr(5.0, 2.30, 5.0, 1.72)
-    ax.plot([9.9, 9.9], [2.23, 1.90], color="black", lw=1.3)
-    ax.plot([9.9, 5.0], [1.90, 1.90], color="black", lw=1.3)
+    ax.plot([10.1, 10.1], [3.57, 1.90], color="black", lw=1.3)
+    ax.plot([10.1, 5.0], [1.90, 1.90], color="black", lw=1.3)
     box(2.2, 1.36, 7.4, 0.72, "", L("扣减本轮已发生的可通行路径代价",
                                     "deduct path cost incurred"), 7.8)
 
-    # 回灌
-    ax.plot([2.2, 0.75], [1.36, 1.36], color="black", lw=1.2, ls="--")
-    arr(0.75, 1.36, 0.75, Y["S3"], dashed=True, lw=1.2)
-    ax.plot([0.75, 2.6], [Y["S3"]] * 2, color="black", lw=1.2, ls="--")
-    _txt(ax, 0.34, 7.0, L("缺口证据、失败站位、剩余预算回灌 S3",
-                          "evidence / failed station / budget → S3"),
-         fontsize=7.2, rotation=90)
+    # 回灌之一：缺口状态、失败站位、剩余预算 → S3（左侧）
+    ax.plot([2.2, 0.62], [1.36, 1.36], color="black", lw=1.2, ls="--")
+    arr(0.62, 1.36, 0.62, Y["S3"], dashed=True, lw=1.2)
+    ax.plot([0.62, 2.6], [Y["S3"]] * 2, color="black", lw=1.2, ls="--")
+    _txt(ax, 0.24, 7.2, L("缺口状态、失败站位、剩余预算 → S3",
+                          "gap state / failed station / budget -> S3"),
+         fontsize=7.0, rotation=90)
+    # 回灌之二：更新后的规划用遮挡模型 → S4（右侧）。这是本方法的核心回路，
+    # 必须与上一条分开画：发现遮挡 → 修改模型 → 影响下一轮可见性评估。
+    ax.plot([7.8, 12.15], [2.66, 2.66], color="black", lw=1.2, ls="--")
+    arr(12.15, 2.66, 12.15, Y["S4"], dashed=True, lw=1.2)
+    ax.plot([12.15, 10.0], [Y["S4"]] * 2, color="black", lw=1.2, ls="--")
+    _txt(ax, 12.52, 7.2, L("更新后的规划用遮挡模型 → S4",
+                           "updated occlusion model -> S4"),
+         fontsize=7.0, rotation=90)
 
     _txt(ax, 6.0, 15.05, L("图 1  总体流程", "Fig.1 Overall flow"),
          fontsize=10.5, fontweight="bold")
@@ -235,8 +244,8 @@ def fig3() -> None:
         ang = sgn * half
         ax.plot([c[0], c[0] + 7.6 * np.cos(ang)], [c[1], c[1] + 7.6 * np.sin(ang)],
                 color="black", lw=0.8, ls=(0, (2, 3)))
-    _txt(ax, 9.2, c[1] + 4.9, L("法向锥（方位角偏置范围）",
-                                "cone of azimuth offsets"), fontsize=7.4)
+    _txt(ax, 9.2, c[1] + 4.9, L("法向锥的平面投影\n（方位角与俯仰角偏置范围）",
+                                "normal cone (azimuth + elevation offsets),\nshown in plan projection"), fontsize=7.4)
 
     th = np.linspace(-half, half, 240)
     for d, lab in ((2.4, "d1"), (4.4, "d2"), (6.6, "d3")):
