@@ -31,6 +31,17 @@ def build_scene_patches(scene: SceneModel, normal_threshold_deg: float = 20.0,
         # 不构成待扫资产, 只作为遮挡体参与光线求交(tri_to_patch 保持 -1)。
         if not comp.in_bim:
             continue
+        # 非目标环境构件(厂房、围墙、杂物)同理: 它们遮挡视线、影响通行, 但不是
+        # 本次验收要检查的资产。此前它们既被算作待扫目标, 又被 prior_tri_mask
+        # 当作"非目标环境"从 M_plan⁰ 移除 —— 于是弱先验下规划器被要求扫一栋楼,
+        # 却拿不到那栋楼的几何, 会以为自己能透视过去。凡 M_ref 声明为目标的,
+        # M_plan⁰ 必须含其几何; 二者的口径必须一致。
+        #
+        # 注意: 这改变了目标集本身(合成变电站中占分块数的 5.7–8.0%), 因此 E7/E8
+        # 与 E2/E5/E6 的**绝对**指标不可跨实验直接比较。各实验内部的对照不受影响,
+        # 且 run.json 的 git_commit 守卫会拦住把两种口径拼在一起的续跑。
+        if not comp.is_target:
+            continue
         idx = np.arange(comp.tri_start, comp.tri_end)
         if len(idx) == 0:
             continue

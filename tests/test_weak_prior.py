@@ -64,6 +64,55 @@ def test_weak_prior_planner_cannot_see_unobserved_environment():
             assert not w.ref_tris[c.tri_start], f"{c.cls} 不应进入 M_plan⁰"
 
 
+def test_every_target_surface_is_present_in_the_planning_model():
+    """凡 M_ref 声明为目标的表面，M_plan⁰ 必须含其几何——各先验档都成立。
+
+    否则规划器会被要求扫一个它拿不到几何的面，并在求交时以为自己能透视过去。
+    先验强度只允许调节**非目标**环境几何。
+    """
+    scene = generate_scene(seed=0, family="S", density="low", n_temp=6)
+    sensor = SensorModel.from_config(SENSOR)
+    for frac in (1.0, 0.5, 0.0):
+        w = cl.SimWorld.build(scene, sensor, sim_dtheta_deg=0.8,
+                              env_prior_frac=frac, observed_env=True)
+        is_target_tri = w.tri_to_patch >= 0
+        assert is_target_tri.any()
+        assert (w.ref_tris | ~is_target_tri).all(), \
+            f"P{int(frac*100)}: 有目标分块的三角面不在 M_plan⁰ 中"
+
+
+def test_non_target_environment_is_not_a_scan_target():
+    """厂房/围墙/杂物遮挡视线但不是验收资产，不得进入目标分块表。"""
+    from patent_gap.simulation.scene_gen import ENVIRONMENT_CLASSES
+
+    scene = generate_scene(seed=0, family="S", density="low", n_temp=6)
+    w = cl.SimWorld.build(scene, SensorModel.from_config(SENSOR), sim_dtheta_deg=0.8)
+    env = [c for c in scene.components if c.cls in ENVIRONMENT_CLASSES]
+    assert env
+    for c in env:
+        assert (w.tri_to_patch[c.tri_start:c.tri_end] == -1).all(), \
+            f"{c.cls} 不应是待扫目标"
+    # 但它们仍必须参与遮挡求交(评测用的完整几何里在)
+    assert w.oracle.tri_to_patch.shape[0] == len(scene.triangles)
+
+
+def test_s1_is_unaffected_by_how_much_environment_the_model_describes():
+    """S1(目标分块与工程属性)只依赖目标本身，不随环境先验强度变化。"""
+    scene = generate_scene(seed=0, family="S", density="low", n_temp=6)
+    sensor = SensorModel.from_config(SENSOR)
+    ref = None
+    for frac in (1.0, 0.5, 0.0):
+        w = cl.SimWorld.build(scene, sensor, sim_dtheta_deg=0.8,
+                              env_prior_frac=frac, observed_env=True)
+        cols = ["patch_id", "element_guid", "centroid_x", "centroid_y", "centroid_z",
+                "area", "engineering_importance"]
+        cur = w.patches[cols].to_numpy(dtype=object)
+        if ref is None:
+            ref = cur
+        else:
+            assert np.array_equal(ref, cur), f"P{int(frac*100)} 的 S1 结果变了"
+
+
 def test_unknown_is_not_free_by_default():
     """未知区域不得默认当作可通行——这是弱先验下最容易偷跑的一处。"""
     g = PlanningEnvGrid((0, 0, 10, 10), res=0.5, r_robot=0.0)
@@ -189,6 +238,36 @@ def test_frontier_baseline_actually_moves_and_grows_the_map():
     assert r["final"]["n_stations"] >= 1, "探索基线一站也没走出去"
     kr = [h["mplan_known_ratio"] for h in r["history"] if "mplan_known_ratio" in h]
     assert kr and kr[-1] >= kr[0], "探索基线没有扩大地图已知区"
+
+
+def test_frontier_baseline_reads_only_the_observed_map():
+    """探索基线只许读当前 M_plan，不得碰完整模型栅格图。
+
+    把 world.grid / world.plan_grid 换成一读就炸的哨兵：真值与初始站已在外面
+    算好，闭环内若还有哪一处摸了完整模型，这里就会抛出来。
+    """
+    class Poison:
+        def __getattr__(self, name):
+            raise AssertionError(f"探索基线读了完整模型栅格图: .{name}")
+
+    scene = generate_scene(seed=0, family="S", density="low", n_temp=6)
+    sensor = SensorModel.from_config(SENSOR)
+    w0 = cl.SimWorld.build(scene, sensor, sim_dtheta_deg=0.8)
+    init = cl.default_init_stations(w0, n=3)
+    probe = cl.ObsState(world=w0)
+    for k, o in enumerate(init):
+        probe.add_station(o, f"i{k}", seed=k)
+    gt = cl.build_ground_truth(w0, list(probe.masks))
+    del w0, probe
+
+    w = cl.SimWorld.build(scene, sensor, sim_dtheta_deg=0.8,
+                          env_prior_frac=0.0, observed_env=True)
+    w.grid = Poison()
+    w.plan_grid = Poison()
+    cfg = cl.EpisodeConfig(stations_max=2, rounds_max=2, seed=0,
+                           method="Bfrontier", vis_audit=True)
+    r = cl.run_episode(w, init, cfg, gt=gt)
+    assert r["final"]["n_stations"] >= 1
 
 
 def test_frontier_baseline_requires_an_observation_driven_map():

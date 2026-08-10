@@ -131,7 +131,20 @@ def test_tight_budget_degrades_instead_of_collapsing():
         assert fin["path_len_m"] <= length_max + 1e-9
         assert fin["stop_reason"] in ("rounds", "stations", "length", "no_candidate")
         seen[length_max] = fin["awc_gap_recovery"]
-    # 站数不要求单调 —— 预算紧时贪心会挑更近的站, 因而可能挤进更多站。要求的是
-    # 恢复率随预算单调不减, 这才是"预算换效果"该有的性质。
+    # 站数不要求单调 —— 预算紧时贪心会挑更近的站, 因而可能挤进更多站。
+    #
+    # 恢复率也**不是严格单调**的: 每轮重规划的性价比贪心在纯路径预算下没有这个
+    # 保证, 预算放宽会改变首站选择, 截断视野内的收益可能反而略低。此处实测
+    # S/low seed0 在 25 m→60 m 之间有一次 0.009 的反转(0.131→0.122)。该断言
+    # 曾经成立, 是因为当时目标集里含厂房与围墙 —— 那是面积大、边缘、两站就能
+    # 覆盖的分块, 把小预算档的恢复率整个抬了起来(25 m 档 0.82 对 0.13)。目标集
+    # 改为只含验收资产后, 剩下的设备才是真正难扫的, 这个由易分块撑起来的单调性
+    # 也就不在了。
+    #
+    # 真正要锁的是本修复针对的性质: 预算收紧时**逐级退化而不是坍塌成零**, 且
+    # 宽预算显著优于紧预算。局部反转限定在容差内。
     vals = [seen[b] for b in (12.0, 25.0, 60.0, 400.0)]
-    assert vals == sorted(vals), f"恢复率不随预算单调: {vals}"
+    tol = 0.02
+    for a, b in zip(vals, vals[1:]):
+        assert b >= a - tol, f"恢复率随预算显著倒退: {vals}"
+    assert vals[-1] > vals[0] + 0.3, f"宽预算未显著优于紧预算: {vals}"

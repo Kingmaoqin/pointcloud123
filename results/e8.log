@@ -1,0 +1,7 @@
+[e8] config_hash=53d9cde1a0 commit=d41109a-dirty
+[e8] scene_S_low/seed0: gaps=93
+[e8]   P50   Bfrontier  known=0.938 awc=0.849 asset=0.369 inval=0.081 st=6 stop=rounds (19.3s)
+[e8]   P50   B10_full   known=0.826 awc=0.016 asset=0.019 inval=0.097 st=1 stop=no_candidate (15.4s)
+[e8]   P50   B11_disc   known=0.940 awc=0.923 asset=0.830 inval=0.001 st=6 stop=rounds (63.7s)
+[e8]   P0    Bfrontier  known=0.938 awc=0.849 asset=0.369 inval=0.081 st=6 stop=rounds (19.6s)
+[e8]   P0    B10_full   known=0.826 awc=0.016 asset=0.019 inval=0.097 st=1 stop=no_candidate (16.4s)

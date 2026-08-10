@@ -16,3 +16,6 @@
 [e7]   P100   B10_full  awc=0.947 asset=0.807 mae=0.033 inval=0.016 known=0.949 st=6 stop=rounds (62.8s)
 [e7]   P100   B11_disc  awc=0.723 asset=0.513 mae=0.006 inval=0.000 known=0.949 st=4 stop=no_candidate (55.1s)
 [e7]   P75    B10_full  awc=0.973 asset=0.875 mae=0.060 inval=0.029 known=0.945 st=6 stop=rounds (63.5s)
+[e7]   P75    B11_disc  awc=0.970 asset=0.922 mae=0.017 inval=0.000 known=0.945 st=6 stop=rounds (52.2s)
+[e7]   P50    B10_full  awc=0.973 asset=0.875 mae=0.060 inval=0.029 known=0.945 st=6 stop=rounds (50.6s)
+[e7]   P50    B11_disc  awc=0.970 asset=0.922 mae=0.018 inval=0.000 known=0.945 st=6 stop=rounds (57.3s)

@@ -161,6 +161,10 @@ def test_failed_registration_does_not_trap_the_planner():
         cl.register_station = original_reg
 
     assert res["registration"] and not res["registration"][0]["accepted"]
-    assert res["final"]["n_reg_failed"] == 1
+    # 注入的那一次必然失败; 之后是否还有**真实**的配准失败取决于站间重叠, 而
+    # 重叠随目标集与采样密度变动 —— 目标集改为只含验收资产后实测会多出一次。
+    # 本用例要锁的是失败之后的控制流(不得原地重选、任务不得因此归零), 不是失败
+    # 次数, 后者不该被写死。
+    assert res["final"]["n_reg_failed"] >= 1
     assert len(set(picks)) == len(picks), f"重复选中同一站位: {picks}"
     assert res["final"]["awc_gap_recovery"] > 0.5
