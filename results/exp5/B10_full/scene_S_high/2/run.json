@@ -1,0 +1,141 @@
+{
+ "method": "B10_full",
+ "seed": 2,
+ "history": [
+  {
+   "awc_gap_recovery": 0.0,
+   "asset_recovery": 0.0,
+   "dens_ok": 0.3322072072072072,
+   "dens_ok_full_ref": 0.41216216216216217,
+   "dens_ok_vs_full": 0.8060109289617486,
+   "crit_recall": 0.0,
+   "path_len_m": 0.0,
+   "n_stations": 0,
+   "ig_per_m": 0.0
+  },
+  {
+   "awc_gap_recovery": 0.2864610507559446,
+   "asset_recovery": 0.2760208616512709,
+   "dens_ok": 0.4009009009009009,
+   "dens_ok_full_ref": 0.41216216216216217,
+   "dens_ok_vs_full": 0.9726775956284153,
+   "crit_recall": 0.29577464788732394,
+   "path_len_m": 17.853553390593273,
+   "n_stations": 1,
+   "ig_per_m": 0.01604504405867327
+  },
+  {
+   "awc_gap_recovery": 0.28842855834767367,
+   "asset_recovery": 0.2844954379224574,
+   "dens_ok": 0.40315315315315314,
+   "dens_ok_full_ref": 0.41216216216216217,
+   "dens_ok_vs_full": 0.9781420765027322,
+   "crit_recall": 0.30985915492957744,
+   "path_len_m": 44.37132034355964,
+   "n_stations": 2,
+   "ig_per_m": 0.00650033751789264
+  },
+  {
+   "awc_gap_recovery": 0.7140401555081378,
+   "asset_recovery": 0.3183937430072032,
+   "dens_ok": 0.40427927927927926,
+   "dens_ok_full_ref": 0.41216216216216217,
+   "dens_ok_vs_full": 0.9808743169398907,
+   "crit_recall": 0.323943661971831,
+   "path_len_m": 55.68198051533946,
+   "n_stations": 3,
+   "ig_per_m": 0.012823540917540309
+  },
+  {
+   "awc_gap_recovery": 0.7815893001405907,
+   "asset_recovery": 0.5196382007822684,
+   "dens_ok": 0.4313063063063063,
+   "dens_ok_full_ref": 0.41216216216216217,
+   "dens_ok_vs_full": 1.046448087431694,
+   "crit_recall": 0.4788732394366197,
+   "path_len_m": 88.84619407771255,
+   "n_stations": 4,
+   "ig_per_m": 0.008797105022382222
+  },
+  {
+   "awc_gap_recovery": 0.7830071331971494,
+   "asset_recovery": 0.5199913081269012,
+   "dens_ok": 0.4358108108108108,
+   "dens_ok_full_ref": 0.41216216216216217,
+   "dens_ok_vs_full": 1.0573770491803278,
+   "crit_recall": 0.4788732394366197,
+   "path_len_m": 141.22361107568207,
+   "n_stations": 5,
+   "ig_per_m": 0.005544449169887987
+  },
+  {
+   "awc_gap_recovery": 0.9313513443760303,
+   "asset_recovery": 0.8360875706214689,
+   "dens_ok": 0.49324324324324326,
+   "dens_ok_full_ref": 0.41216216216216217,
+   "dens_ok_vs_full": 1.1967213114754098,
+   "crit_recall": 0.8169014084507042,
+   "path_len_m": 163.10533905932738,
+   "n_stations": 6,
+   "ig_per_m": 0.005710121751669108
+  },
+  {
+   "awc_gap_recovery": 0.9566426401194001,
+   "asset_recovery": 0.9438559322033897,
+   "dens_ok": 0.5371621621621622,
+   "dens_ok_full_ref": 0.41216216216216217,
+   "dens_ok_vs_full": 1.3032786885245902,
+   "crit_recall": 0.9577464788732394,
+   "path_len_m": 174.06244584051393,
+   "n_stations": 7,
+   "ig_per_m": 0.0054959737897509004
+  },
+  {
+   "awc_gap_recovery": 0.9589512724498543,
+   "asset_recovery": 0.9608050847457625,
+   "dens_ok": 0.5563063063063063,
+   "dens_ok_full_ref": 0.41216216216216217,
+   "dens_ok_vs_full": 1.349726775956284,
+   "crit_recall": 0.971830985915493,
+   "path_len_m": 178.3302127934803,
+   "n_stations": 8,
+   "ig_per_m": 0.005377390950351141
+  },
+  {
+   "awc_gap_recovery": 1.0,
+   "asset_recovery": 1.0,
+   "dens_ok": 0.5855855855855856,
+   "dens_ok_full_ref": 0.41216216216216217,
+   "dens_ok_vs_full": 1.4207650273224044,
+   "crit_recall": 1.0,
+   "path_len_m": 210.37615433949867,
+   "n_stations": 9,
+   "ig_per_m": 0.004753390436000794
+  }
+ ],
+ "final": {
+  "awc_gap_recovery": 1.0,
+  "asset_recovery": 1.0,
+  "dens_ok": 0.5855855855855856,
+  "dens_ok_full_ref": 0.41216216216216217,
+  "dens_ok_vs_full": 1.4207650273224044,
+  "crit_recall": 1.0,
+  "path_len_m": 210.37615433949867,
+  "n_stations": 9,
+  "ig_per_m": 0.004753390436000794,
+  "stop_reason": "rounds"
+ },
+ "registration": [],
+ "status": "ok",
+ "family": "S",
+ "density": "high",
+ "scene": "scene_S_high",
+ "scene_seed": 2,
+ "n_full_stations": 10,
+ "n_components": 84,
+ "stations_budget": 9,
+ "n_patches": 888,
+ "config_hash": "23e6699a18",
+ "git_commit": "30ed463-dirty",
+ "runtime_s": 164.3
+}

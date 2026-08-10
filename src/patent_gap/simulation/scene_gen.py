@@ -32,6 +32,12 @@ CLASS_TABLE: dict[str, tuple[float, bool, float]] = {
     "temp_obstacle": (0.1, False, 0.0),
 }
 
+# 非目标环境构件：它们会遮挡视线、影响通行，但不是本次验收要检查的资产。
+# 目标参考模型 M_ref 不必描述它们；规划环境模型 M_plan 对它们的认识应当来自
+# 实际观测。E7 通过控制其中多大比例进入 M_plan⁽⁰⁾ 来调节环境几何先验强度。
+ENVIRONMENT_CLASSES = frozenset({"building", "fence", "clutter", "ground",
+                                 "temp_obstacle"})
+
 SIZE_TABLE = {"S": (44.0, 32.0, 2), "M": (58.0, 42.0, 3), "L": (74.0, 52.0, 4)}
 DENSITY_TABLE = {"low": 1.0, "mid": 1.5, "high": 2.0}
 
@@ -49,6 +55,7 @@ class Component:
     tri_start: int
     tri_end: int                # [start, end) 三角面全局索引
     in_bim: bool = True         # False = 只存在于竣工实景, 设计 BIM 中查不到
+    is_target: bool = True      # True = 目标构件(M_ref 必含); False = 非目标环境物体
 
 
 @dataclass
@@ -62,6 +69,37 @@ class SceneModel:
     seed: int = 0
     family: str = "S"
     density: str = "mid"
+
+    def prior_tri_mask(self, env_prior_frac: float = 1.0,
+                       seed: int = 0) -> np.ndarray:
+        """(T,) bool: 规划环境模型 M_plan⁽⁰⁾ 初始包含哪些三角面。
+
+        目标构件恒含 —— 它们是待扫目标，S4 的首次命中判定必须能命中它们本身；
+        非目标环境构件按 env_prior_frac **以对象为单位**随机选取（不是随机删
+        三角面，避免一个实体只剩半张皮、产生不物理的穿透）。
+
+        env_prior_frac = 1.0 即现行行为（完整环境几何先验，E7 的 P100 档）；
+        = 0.0 则 M_plan⁽⁰⁾ 只含目标表面，环境几何全部有待观测发现。
+        """
+        mask = np.zeros(len(self.triangles), dtype=bool)
+        # 地面恒含: 它是移动平台的支承面, 按定义已知, 不属于"有待观测发现的
+        # 环境几何"。若排除它, env_prior_frac=1.0 时 M_plan 也会与完整模型不同,
+        # 既有结果即不再逐比特可复现。
+        envs = [c for c in self.components
+                if (not c.is_target) and c.cls != "ground" and c.in_bim]
+        rng = np.random.default_rng(seed * 7919 + 13)
+        keep = set()
+        if envs and env_prior_frac > 0:
+            k = int(round(env_prior_frac * len(envs)))
+            if k > 0:
+                keep = {envs[i].comp_id
+                        for i in rng.choice(len(envs), k, replace=False)}
+        for c in self.components:
+            if not c.in_bim:
+                continue
+            if c.cls == "ground" or c.is_target or c.comp_id in keep:
+                mask[c.tri_start:c.tri_end] = True
+        return mask
 
     def bim_tri_mask(self) -> np.ndarray:
         """(T,) bool: 该三角面在设计 BIM 中是否存在。
@@ -107,12 +145,13 @@ class _Builder:
                 comp_id=comp_id, cls=cls, importance=e_i, live=live, d_safe=d_safe,
                 clearance_z=clearance_z,
                 bbox_min=v.min(axis=0), bbox_max=v.max(axis=0),
-                tri_start=self._nt, tri_end=self._nt + len(f), in_bim=in_bim))
+                tri_start=self._nt, tri_end=self._nt + len(f), in_bim=in_bim,
+                is_target=cls not in ENVIRONMENT_CLASSES))
         else:
             self.components.append(Component(
                 comp_id=comp_id, cls=cls, importance=e_i, live=False, d_safe=0.0,
                 clearance_z=0.0, bbox_min=v.min(axis=0), bbox_max=v.max(axis=0),
-                tri_start=self._nt, tri_end=self._nt + len(f)))
+                tri_start=self._nt, tri_end=self._nt + len(f), is_target=False))
         self._nv += len(v)
         self._nt += len(f)
 

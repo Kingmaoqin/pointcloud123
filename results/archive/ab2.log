@@ -1,0 +1,62 @@
+[ab] config_hash=5f597462b0 commit=77e257c
+[ab] scene_S_low/seed10: patches=486 gaps=56
+[ab]   tsp_first     awc=0.995 crit=0.976 len=148m (53.6s)
+[ab]   greedy_first  awc=0.990 crit=0.952 len=213m (32.3s)
+[ab]   j_step        awc=0.990 crit=0.952 len=213m (33.2s)
+[ab] scene_S_low/seed11: patches=540 gaps=50
+[ab]   tsp_first     awc=0.978 crit=0.871 len=131m (54.1s)
+[ab]   greedy_first  awc=0.988 crit=0.871 len=166m (45.9s)
+[ab]   j_step        awc=0.988 crit=0.871 len=166m (41.1s)
+[ab] scene_S_low/seed12: patches=492 gaps=46
+[ab]   tsp_first     awc=0.988 crit=0.900 len=160m (45.3s)
+[ab]   greedy_first  awc=0.997 crit=0.967 len=200m (27.9s)
+[ab]   j_step        awc=0.997 crit=0.967 len=193m (28.3s)
+[ab] scene_S_low/seed13: patches=478 gaps=49
+[ab]   tsp_first     awc=0.997 crit=0.971 len=167m (51.1s)
+[ab]   greedy_first  awc=0.990 crit=0.882 len=219m (51.3s)
+[ab]   j_step        awc=0.990 crit=0.882 len=219m (37.0s)
+[ab] scene_S_low/seed14: patches=546 gaps=52
+[ab]   tsp_first     awc=0.984 crit=0.939 len=132m (52.1s)
+[ab]   greedy_first  awc=0.984 crit=0.939 len=175m (46.0s)
+[ab]   j_step        awc=0.984 crit=0.939 len=175m (48.3s)
+[ab] scene_S_mid/seed10: patches=684 gaps=66
+[ab]   tsp_first     awc=0.986 crit=0.958 len=189m (66.7s)
+[ab]   greedy_first  awc=0.979 crit=0.938 len=208m (52.7s)
+[ab]   j_step        awc=0.979 crit=0.938 len=208m (52.7s)
+[ab] scene_S_mid/seed11: patches=666 gaps=63
+[ab]   tsp_first     awc=0.996 crit=0.978 len=109m (60.4s)
+[ab]   greedy_first  awc=0.969 crit=0.778 len=203m (33.4s)
+[ab]   j_step        awc=0.969 crit=0.778 len=203m (45.1s)
+[ab] scene_S_mid/seed12: patches=708 gaps=71
+[ab]   tsp_first     awc=0.975 crit=0.885 len=132m (55.1s)
+[ab]   greedy_first  awc=0.976 crit=0.885 len=201m (39.0s)
+[ab]   j_step        awc=0.976 crit=0.885 len=201m (37.1s)
+[ab] scene_S_mid/seed13: patches=654 gaps=56
+[ab]   tsp_first     awc=0.997 crit=0.974 len=195m (61.7s)
+[ab]   greedy_first  awc=0.997 crit=0.974 len=240m (46.1s)
+[ab]   j_step        awc=0.997 crit=0.974 len=240m (43.2s)
+[ab] scene_S_mid/seed14: patches=666 gaps=56
+[ab]   tsp_first     awc=0.959 crit=0.947 len=128m (64.3s)
+[ab]   greedy_first  awc=0.912 crit=0.868 len=247m (42.4s)
+[ab]   j_step        awc=0.912 crit=0.868 len=247m (39.4s)
+[ab] scene_M_mid/seed10: patches=852 gaps=108
+[ab]   tsp_first     awc=0.923 crit=0.978 len=165m (143.9s)
+[ab]   greedy_first  awc=0.843 crit=0.944 len=268m (123.1s)
+[ab]   j_step        awc=0.843 crit=0.944 len=268m (118.4s)
+[ab] scene_M_mid/seed11: patches=846 gaps=97
+[ab]   tsp_first     awc=0.919 crit=0.987 len=147m (141.9s)
+[ab]   greedy_first  awc=0.963 crit=0.987 len=272m (145.5s)
+[ab]   j_step        awc=0.963 crit=0.987 len=272m (119.5s)
+[ab] scene_M_mid/seed12: patches=846 gaps=76
+[ab]   tsp_first     awc=1.000 crit=1.000 len=162m (155.6s)
+[ab]   greedy_first  awc=0.988 crit=0.909 len=289m (132.1s)
+[ab]   j_step        awc=0.988 crit=0.909 len=289m (132.8s)
+[ab] scene_M_mid/seed13: patches=858 gaps=136
+[ab]   tsp_first     awc=0.964 crit=0.983 len=162m (94.7s)
+[ab]   greedy_first  awc=0.973 crit=0.983 len=260m (81.4s)
+[ab]   j_step        awc=0.973 crit=0.983 len=260m (85.6s)
+[ab] scene_M_mid/seed14: patches=894 gaps=115
+[ab]   tsp_first     awc=0.989 crit=0.989 len=165m (117.2s)
+[ab]   greedy_first  awc=0.960 crit=0.978 len=296m (105.8s)
+[ab]   j_step        awc=0.960 crit=0.978 len=296m (106.0s)
+[ab] summary → /home/xqin5/patent_gap_nbv/results/exec_policy_ab/summary.md

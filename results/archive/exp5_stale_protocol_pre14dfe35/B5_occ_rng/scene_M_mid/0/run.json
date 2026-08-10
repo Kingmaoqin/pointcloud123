@@ -1,0 +1,99 @@
+{
+ "method": "B5_occ_rng",
+ "seed": 0,
+ "history": [
+  {
+   "awc_gap_recovery": 0.0,
+   "asset_recovery": 0.0,
+   "dens_ok": 0.25886524822695034,
+   "crit_recall": 0.0,
+   "path_len_m": 0.0,
+   "n_stations": 0,
+   "ig_per_m": 0.0
+  },
+  {
+   "awc_gap_recovery": 0.5052412506537687,
+   "asset_recovery": 0.04968310628688,
+   "dens_ok": 0.26832151300236406,
+   "crit_recall": 0.05714285714285714,
+   "path_len_m": 46.37005768508881,
+   "n_stations": 1,
+   "ig_per_m": 0.010895851242735004
+  },
+  {
+   "awc_gap_recovery": 0.5052412506537687,
+   "asset_recovery": 0.04968310628688,
+   "dens_ok": 0.2695035460992908,
+   "crit_recall": 0.05714285714285714,
+   "path_len_m": 83.13782463805518,
+   "n_stations": 2,
+   "ig_per_m": 0.006077152642053874
+  },
+  {
+   "awc_gap_recovery": 0.6932490645651599,
+   "asset_recovery": 0.628760913603827,
+   "dens_ok": 0.4066193853427896,
+   "crit_recall": 0.5142857142857142,
+   "path_len_m": 152.14087296526014,
+   "n_stations": 3,
+   "ig_per_m": 0.004556626046989072
+  },
+  {
+   "awc_gap_recovery": 0.6932490645651599,
+   "asset_recovery": 0.628760913603827,
+   "dens_ok": 0.4078014184397163,
+   "crit_recall": 0.5142857142857142,
+   "path_len_m": 211.58326112068525,
+   "n_stations": 4,
+   "ig_per_m": 0.0032764835029635763
+  },
+  {
+   "awc_gap_recovery": 0.7232385731342927,
+   "asset_recovery": 0.7576917312138896,
+   "dens_ok": 0.491725768321513,
+   "crit_recall": 0.6571428571428571,
+   "path_len_m": 251.05077554195745,
+   "n_stations": 5,
+   "ig_per_m": 0.0028808458032961535
+  },
+  {
+   "awc_gap_recovery": 0.8225046318679232,
+   "asset_recovery": 0.9197432403200948,
+   "dens_ok": 0.5449172576832151,
+   "crit_recall": 0.9285714285714286,
+   "path_len_m": 299.00788232314403,
+   "n_stations": 6,
+   "ig_per_m": 0.00275077909477659
+  },
+  {
+   "awc_gap_recovery": 0.8536927644722665,
+   "asset_recovery": 0.9471437099351678,
+   "dens_ok": 0.5697399527186762,
+   "crit_recall": 0.9428571428571428,
+   "path_len_m": 338.62489168102786,
+   "n_stations": 7,
+   "ig_per_m": 0.0025210573275765372
+  }
+ ],
+ "final": {
+  "awc_gap_recovery": 0.8536927644722665,
+  "asset_recovery": 0.9471437099351678,
+  "dens_ok": 0.5697399527186762,
+  "crit_recall": 0.9428571428571428,
+  "path_len_m": 338.62489168102786,
+  "n_stations": 7,
+  "ig_per_m": 0.0025210573275765372
+ },
+ "registration": [],
+ "status": "ok",
+ "family": "M",
+ "density": "mid",
+ "scene": "scene_M_mid",
+ "scene_seed": 0,
+ "n_full_stations": 21,
+ "stations_budget": 7,
+ "n_patches": 846,
+ "config_hash": "7016dc479a",
+ "git_commit": "a7a24fa",
+ "runtime_s": 139.6
+}

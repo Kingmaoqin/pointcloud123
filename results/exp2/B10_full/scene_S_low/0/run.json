@@ -4,73 +4,99 @@
  "history": [
   {
    "awc_gap_recovery": 0.0,
-   "dens_ok": 0.30228136882129275,
+   "asset_recovery": 0.0,
+   "dens_ok": 0.3593155893536122,
+   "dens_ok_full_ref": 0.5684410646387833,
+   "dens_ok_vs_full": 0.6321070234113713,
    "crit_recall": 0.0,
    "path_len_m": 0.0,
    "n_stations": 0,
    "ig_per_m": 0.0
   },
   {
-   "awc_gap_recovery": 0.3930156230287711,
-   "dens_ok": 0.30988593155893535,
-   "crit_recall": 0.020833333333333332,
-   "path_len_m": 34.566756826189675,
+   "awc_gap_recovery": 0.24483102046205113,
+   "asset_recovery": 0.543836742147553,
+   "dens_ok": 0.46387832699619774,
+   "dens_ok_full_ref": 0.5684410646387833,
+   "dens_ok_vs_full": 0.8160535117056856,
+   "crit_recall": 0.5945945945945946,
+   "path_len_m": 17.485281374238564,
    "n_stations": 1,
-   "ig_per_m": 0.011369756931636723
+   "ig_per_m": 0.014002120710666165
   },
   {
-   "awc_gap_recovery": 0.817010332931738,
-   "dens_ok": 0.3193916349809886,
-   "crit_recall": 0.041666666666666664,
-   "path_len_m": 54.67031021678295,
+   "awc_gap_recovery": 0.878478271632026,
+   "asset_recovery": 0.6349981738495251,
+   "dens_ok": 0.47718631178707227,
+   "dens_ok_full_ref": 0.5684410646387833,
+   "dens_ok_vs_full": 0.8394648829431438,
+   "crit_recall": 0.6486486486486487,
+   "path_len_m": 49.32411613907039,
    "n_stations": 2,
-   "ig_per_m": 0.01494431492508576
+   "ig_per_m": 0.01781031958393614
   },
   {
-   "awc_gap_recovery": 0.8302199351271106,
-   "dens_ok": 0.33460076045627374,
-   "crit_recall": 0.16666666666666666,
-   "path_len_m": 74.58452377915604,
+   "awc_gap_recovery": 0.8810804407805259,
+   "asset_recovery": 0.6354072315558801,
+   "dens_ok": 0.4790874524714829,
+   "dens_ok_full_ref": 0.5684410646387833,
+   "dens_ok_vs_full": 0.8428093645484949,
+   "crit_recall": 0.6486486486486487,
+   "path_len_m": 57.048989873223306,
    "n_stations": 3,
-   "ig_per_m": 0.011131262801722549
+   "ig_per_m": 0.015444277676756423
   },
   {
-   "awc_gap_recovery": 0.8781496147618736,
-   "dens_ok": 0.4448669201520912,
-   "crit_recall": 0.5,
-   "path_len_m": 100.99442635585334,
+   "awc_gap_recovery": 0.8810804407805259,
+   "asset_recovery": 0.6354072315558801,
+   "dens_ok": 0.48098859315589354,
+   "dens_ok_full_ref": 0.5684410646387833,
+   "dens_ok_vs_full": 0.8461538461538461,
+   "crit_recall": 0.6486486486486487,
+   "path_len_m": 65.40254326381658,
    "n_stations": 4,
-   "ig_per_m": 0.008695030472946279
+   "ig_per_m": 0.013471654110245838
   },
   {
-   "awc_gap_recovery": 0.8781496147618736,
-   "dens_ok": 0.4524714828897338,
-   "crit_recall": 0.5,
-   "path_len_m": 132.16904755831206,
+   "awc_gap_recovery": 0.8810804407805259,
+   "asset_recovery": 0.6354072315558801,
+   "dens_ok": 0.4923954372623574,
+   "dens_ok_full_ref": 0.5684410646387833,
+   "dens_ok_vs_full": 0.8662207357859532,
+   "crit_recall": 0.6486486486486487,
+   "path_len_m": 80.15254326381658,
    "n_stations": 5,
-   "ig_per_m": 0.00664413969068242
+   "ig_per_m": 0.010992545026057505
   },
   {
-   "awc_gap_recovery": 0.9880512604489483,
-   "dens_ok": 0.5608365019011406,
-   "crit_recall": 0.875,
-   "path_len_m": 167.38225099390846,
+   "awc_gap_recovery": 0.9978180215584657,
+   "asset_recovery": 0.918918918918919,
+   "dens_ok": 0.6007604562737643,
+   "dens_ok_full_ref": 0.5684410646387833,
+   "dens_ok_vs_full": 1.0568561872909699,
+   "crit_recall": 0.972972972972973,
+   "path_len_m": 126.7132034355964,
    "n_stations": 6,
-   "ig_per_m": 0.005902963155184873
+   "ig_per_m": 0.007874617597096891
   }
  ],
  "final": {
-  "awc_gap_recovery": 0.9880512604489483,
-  "dens_ok": 0.5608365019011406,
-  "crit_recall": 0.875,
-  "path_len_m": 167.38225099390846,
+  "awc_gap_recovery": 0.9978180215584657,
+  "asset_recovery": 0.918918918918919,
+  "dens_ok": 0.6007604562737643,
+  "dens_ok_full_ref": 0.5684410646387833,
+  "dens_ok_vs_full": 1.0568561872909699,
+  "crit_recall": 0.972972972972973,
+  "path_len_m": 126.7132034355964,
   "n_stations": 6,
-  "ig_per_m": 0.005902963155184873
+  "ig_per_m": 0.007874617597096891,
+  "stop_reason": "rounds"
  },
+ "registration": [],
  "status": "ok",
- "config_hash": "cbfd14f224",
- "git_commit": "77e257c-dirty",
+ "config_hash": "54f6a8f7d8",
+ "git_commit": "30ed463-dirty",
  "scene": "scene_S_low",
  "scene_seed": 0,
- "runtime_s": 50.33
+ "runtime_s": 143.22
 }

@@ -1,0 +1,92 @@
+[e3] config_hash=4e164758ad commit=e326f27
+[e3] n_temp=0 scene_S_low/seed0: patches=526 gaps=64 vis_mae=0.0000
+[e3]   B10_full       awc=0.988 crit=0.875 (47.1s)
+[e3]   B11_disc       awc=0.988 crit=0.875 (32.4s)
+[e3] n_temp=0 scene_S_low/seed1: patches=486 gaps=41 vis_mae=0.0000
+[e3]   B10_full       awc=0.988 crit=1.000 (38.6s)
+[e3]   B11_disc       awc=0.988 crit=1.000 (36.0s)
+[e3] n_temp=0 scene_S_low/seed2: patches=522 gaps=48 vis_mae=0.0000
+[e3]   B10_full       awc=0.975 crit=0.900 (51.3s)
+[e3]   B11_disc       awc=0.975 crit=0.900 (53.7s)
+[e3] n_temp=0 scene_S_low/seed3: patches=516 gaps=50 vis_mae=0.0000
+[e3]   B10_full       awc=0.993 crit=0.882 (56.6s)
+[e3]   B11_disc       awc=0.993 crit=0.882 (41.2s)
+[e3] n_temp=0 scene_S_low/seed4: patches=522 gaps=45 vis_mae=0.0000
+[e3]   B10_full       awc=0.984 crit=0.724 (39.8s)
+[e3]   B11_disc       awc=0.984 crit=0.724 (35.9s)
+[e3] n_temp=0 scene_S_mid/seed0: patches=682 gaps=57 vis_mae=0.0000
+[e3]   B10_full       awc=0.996 crit=0.975 (61.9s)
+[e3]   B11_disc       awc=0.996 crit=0.975 (65.7s)
+[e3] n_temp=0 scene_S_mid/seed1: patches=654 gaps=61 vis_mae=0.0000
+[e3]   B10_full       awc=0.997 crit=0.977 (54.2s)
+[e3]   B11_disc       awc=0.997 crit=0.977 (68.5s)
+[e3] n_temp=0 scene_S_mid/seed2: patches=672 gaps=55 vis_mae=0.0000
+[e3]   B10_full       awc=0.976 crit=0.889 (85.2s)
+[e3]   B11_disc       awc=0.976 crit=0.889 (69.2s)
+[e3] n_temp=0 scene_S_mid/seed3: patches=670 gaps=70 vis_mae=0.0000
+[e3]   B10_full       awc=0.984 crit=1.000 (90.1s)
+[e3]   B11_disc       awc=0.984 crit=1.000 (39.3s)
+[e3] n_temp=0 scene_S_mid/seed4: patches=706 gaps=54 vis_mae=0.0000
+[e3]   B10_full       awc=0.986 crit=0.833 (44.4s)
+[e3]   B11_disc       awc=0.986 crit=0.833 (104.3s)
+[e3] n_temp=0 scene_M_mid/seed0: patches=846 gaps=91 vis_mae=0.0000
+[e3]   B10_full       awc=0.984 crit=0.957 (349.2s)
+[e3]   B11_disc       awc=0.984 crit=0.957 (327.7s)
+[e3] n_temp=0 scene_M_mid/seed1: patches=858 gaps=90 vis_mae=0.0000
+[e3]   B10_full       awc=0.849 crit=0.971 (357.0s)
+[e3]   B11_disc       awc=0.849 crit=0.971 (436.0s)
+[e3] n_temp=0 scene_M_mid/seed2: patches=864 gaps=83 vis_mae=0.0000
+[e3]   B10_full       awc=0.956 crit=0.919 (361.2s)
+[e3]   B11_disc       awc=0.956 crit=0.919 (135.1s)
+[e3] n_temp=0 scene_M_mid/seed3: patches=840 gaps=89 vis_mae=0.0000
+[e3]   B10_full       awc=0.982 crit=0.889 (199.1s)
+[e3]   B11_disc       awc=0.982 crit=0.889 (165.3s)
+[e3] n_temp=0 scene_M_mid/seed4: patches=898 gaps=97 vis_mae=0.0000
+[e3]   B10_full       awc=0.824 crit=0.935 (152.5s)
+[e3]   B11_disc       awc=0.824 crit=0.935 (170.4s)
+[e3] n_temp=6 scene_S_low/seed0: patches=526 gaps=106 vis_mae=0.1116
+[e3]   B10_full       awc=0.983 crit=0.885 (46.4s)
+[e3]   B11_disc       awc=0.985 crit=0.897 (70.1s)
+[e3] n_temp=6 scene_S_low/seed1: patches=486 gaps=88 vis_mae=0.1025
+[e3]   B10_full       awc=0.966 crit=0.878 (55.2s)
+[e3]   B11_disc       awc=0.970 crit=0.878 (84.4s)
+[e3] n_temp=6 scene_S_low/seed2: patches=522 gaps=76 vis_mae=0.0891
+[e3]   B10_full       awc=0.979 crit=0.870 (75.1s)
+[e3]   B11_disc       awc=0.983 crit=0.891 (96.0s)
+[e3] n_temp=6 scene_S_low/seed3: patches=516 gaps=87 vis_mae=0.1106
+[e3]   B10_full       awc=0.974 crit=0.789 (59.6s)
+[e3]   B11_disc       awc=0.921 crit=0.807 (34.1s)
+[e3] n_temp=6 scene_S_low/seed4: patches=522 gaps=68 vis_mae=0.0881
+[e3]   B10_full       awc=0.943 crit=0.846 (44.0s)
+[e3]   B11_disc       awc=0.992 crit=0.981 (70.0s)
+[e3] n_temp=6 scene_S_mid/seed0: patches=682 gaps=109 vis_mae=0.1205
+[e3]   B10_full       awc=0.954 crit=0.899 (70.4s)
+[e3]   B11_disc       awc=0.957 crit=0.865 (58.5s)
+[e3] n_temp=6 scene_S_mid/seed1: patches=654 gaps=119 vis_mae=0.0939
+[e3]   B10_full       awc=0.981 crit=0.920 (58.4s)
+[e3]   B11_disc       awc=0.974 crit=0.920 (71.4s)
+[e3] n_temp=6 scene_S_mid/seed2: patches=672 gaps=99 vis_mae=0.1380
+[e3]   B10_full       awc=0.971 crit=0.916 (110.0s)
+[e3]   B11_disc       awc=0.970 crit=0.928 (47.7s)
+[e3] n_temp=6 scene_S_mid/seed3: patches=670 gaps=115 vis_mae=0.0935
+[e3]   B10_full       awc=0.952 crit=0.890 (42.5s)
+[e3]   B11_disc       awc=0.960 crit=0.890 (72.1s)
+[e3] n_temp=6 scene_S_mid/seed4: patches=706 gaps=71 vis_mae=0.0501
+[e3]   B10_full       awc=0.934 crit=0.769 (91.0s)
+[e3]   B11_disc       awc=0.932 crit=0.750 (62.0s)
+[e3] n_temp=6 scene_M_mid/seed0: patches=846 gaps=141 vis_mae=0.0855
+[e3]   B10_full       awc=0.985 crit=0.946 (134.0s)
+[e3]   B11_disc       awc=0.984 crit=0.938 (186.3s)
+[e3] n_temp=6 scene_M_mid/seed1: patches=858 gaps=140 vis_mae=0.0738
+[e3]   B10_full       awc=0.808 crit=0.925 (141.3s)
+[e3]   B11_disc       awc=0.939 crit=0.944 (125.2s)
+[e3] n_temp=6 scene_M_mid/seed2: patches=864 gaps=100 vis_mae=0.0599
+[e3]   B10_full       awc=0.815 crit=0.893 (163.1s)
+[e3]   B11_disc       awc=0.922 crit=0.893 (137.5s)
+[e3] n_temp=6 scene_M_mid/seed3: patches=840 gaps=158 vis_mae=0.0874
+[e3]   B10_full       awc=0.949 crit=0.972 (176.9s)
+[e3]   B11_disc       awc=0.949 crit=0.972 (169.9s)
+[e3] n_temp=6 scene_M_mid/seed4: patches=898 gaps=138 vis_mae=0.0771
+[e3]   B10_full       awc=0.881 crit=0.936 (128.6s)
+[e3]   B11_disc       awc=0.815 crit=0.918 (137.8s)
+[e3] summary → /home/xqin5/patent_gap_nbv/results/exp3b/summary.md

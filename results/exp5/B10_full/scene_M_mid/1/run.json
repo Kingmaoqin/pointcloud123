@@ -1,0 +1,141 @@
+{
+ "method": "B10_full",
+ "seed": 1,
+ "history": [
+  {
+   "awc_gap_recovery": 0.0,
+   "asset_recovery": 0.0,
+   "dens_ok": 0.26456876456876455,
+   "dens_ok_full_ref": 0.5442890442890443,
+   "dens_ok_vs_full": 0.4860813704496787,
+   "crit_recall": 0.0,
+   "path_len_m": 0.0,
+   "n_stations": 0,
+   "ig_per_m": 0.0
+  },
+  {
+   "awc_gap_recovery": 0.09125805818350614,
+   "asset_recovery": 0.37667121140512766,
+   "dens_ok": 0.32167832167832167,
+   "dens_ok_full_ref": 0.5442890442890443,
+   "dens_ok_vs_full": 0.5910064239828693,
+   "crit_recall": 0.27941176470588236,
+   "path_len_m": 21.5533008588991,
+   "n_stations": 1,
+   "ig_per_m": 0.004234064136205234
+  },
+  {
+   "awc_gap_recovery": 0.2062711624880403,
+   "asset_recovery": 0.6959417574613873,
+   "dens_ok": 0.4405594405594406,
+   "dens_ok_full_ref": 0.5442890442890443,
+   "dens_ok_vs_full": 0.8094218415417558,
+   "crit_recall": 0.5588235294117647,
+   "path_len_m": 52.8033008588991,
+   "n_stations": 2,
+   "ig_per_m": 0.003906406590740185
+  },
+  {
+   "awc_gap_recovery": 0.29774012078841616,
+   "asset_recovery": 0.8547640363729524,
+   "dens_ok": 0.4988344988344988,
+   "dens_ok_full_ref": 0.5442890442890443,
+   "dens_ok_vs_full": 0.9164882226980727,
+   "crit_recall": 0.8970588235294118,
+   "path_len_m": 79.93502884254438,
+   "n_stations": 3,
+   "ig_per_m": 0.0037247765478999593
+  },
+  {
+   "awc_gap_recovery": 0.38401893765112793,
+   "asset_recovery": 0.8622789173253335,
+   "dens_ok": 0.5372960372960373,
+   "dens_ok_full_ref": 0.5442890442890443,
+   "dens_ok_vs_full": 0.9871520342612418,
+   "crit_recall": 0.9264705882352942,
+   "path_len_m": 98.98097038856275,
+   "n_stations": 4,
+   "ig_per_m": 0.003879724922311949
+  },
+  {
+   "awc_gap_recovery": 0.4146664831369012,
+   "asset_recovery": 0.904062414399157,
+   "dens_ok": 0.5675990675990676,
+   "dens_ok_full_ref": 0.5442890442890443,
+   "dens_ok_vs_full": 1.0428265524625266,
+   "crit_recall": 0.9558823529411765,
+   "path_len_m": 108.66295090390221,
+   "n_stations": 5,
+   "ig_per_m": 0.003816079718869571
+  },
+  {
+   "awc_gap_recovery": 0.4516167637184358,
+   "asset_recovery": 0.9509563175188175,
+   "dens_ok": 0.5815850815850816,
+   "dens_ok_full_ref": 0.5442890442890443,
+   "dens_ok_vs_full": 1.0685224839400427,
+   "crit_recall": 0.9705882352941176,
+   "path_len_m": 117.80203820042823,
+   "n_stations": 6,
+   "ig_per_m": 0.003833692274067921
+  },
+  {
+   "awc_gap_recovery": 0.9339510511340304,
+   "asset_recovery": 0.9742317357942358,
+   "dens_ok": 0.5897435897435898,
+   "dens_ok_full_ref": 0.5442890442890443,
+   "dens_ok_vs_full": 1.0835117773019272,
+   "crit_recall": 0.9852941176470589,
+   "path_len_m": 132.0979797464466,
+   "n_stations": 7,
+   "ig_per_m": 0.007070138793391754
+  },
+  {
+   "awc_gap_recovery": 0.9339510511340304,
+   "asset_recovery": 0.9742317357942358,
+   "dens_ok": 0.5909090909090909,
+   "dens_ok_full_ref": 0.5442890442890443,
+   "dens_ok_vs_full": 1.0856531049250535,
+   "crit_recall": 0.9852941176470589,
+   "path_len_m": 178.0121933088197,
+   "n_stations": 8,
+   "ig_per_m": 0.0052465566193760135
+  },
+  {
+   "awc_gap_recovery": 0.9518595337470241,
+   "asset_recovery": 0.9960565476190476,
+   "dens_ok": 0.6293706293706294,
+   "dens_ok_full_ref": 0.5442890442890443,
+   "dens_ok_vs_full": 1.1563169164882225,
+   "crit_recall": 1.0,
+   "path_len_m": 246.9190475583121,
+   "n_stations": 9,
+   "ig_per_m": 0.0038549457531105785
+  }
+ ],
+ "final": {
+  "awc_gap_recovery": 0.9518595337470241,
+  "asset_recovery": 0.9960565476190476,
+  "dens_ok": 0.6293706293706294,
+  "dens_ok_full_ref": 0.5442890442890443,
+  "dens_ok_vs_full": 1.1563169164882225,
+  "crit_recall": 1.0,
+  "path_len_m": 246.9190475583121,
+  "n_stations": 9,
+  "ig_per_m": 0.0038549457531105785,
+  "stop_reason": "rounds"
+ },
+ "registration": [],
+ "status": "ok",
+ "family": "M",
+ "density": "mid",
+ "scene": "scene_M_mid",
+ "scene_seed": 1,
+ "n_full_stations": 21,
+ "n_components": 81,
+ "stations_budget": 9,
+ "n_patches": 858,
+ "config_hash": "23e6699a18",
+ "git_commit": "30ed463-dirty",
+ "runtime_s": 594.8
+}

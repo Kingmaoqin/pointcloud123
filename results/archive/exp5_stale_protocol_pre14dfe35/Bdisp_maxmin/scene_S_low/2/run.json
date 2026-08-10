@@ -1,0 +1,81 @@
+{
+ "method": "Bdisp_maxmin",
+ "seed": 2,
+ "history": [
+  {
+   "awc_gap_recovery": 0.0,
+   "asset_recovery": 0.0,
+   "dens_ok": 0.29693486590038315,
+   "crit_recall": 0.0,
+   "path_len_m": 0.0,
+   "n_stations": 0,
+   "ig_per_m": 0.0
+  },
+  {
+   "awc_gap_recovery": 0.40927841239923823,
+   "asset_recovery": 0.06324506324506324,
+   "dens_ok": 0.30842911877394635,
+   "crit_recall": 0.03333333333333333,
+   "path_len_m": 31.609650045003114,
+   "n_stations": 1,
+   "ig_per_m": 0.012947894450477707
+  },
+  {
+   "awc_gap_recovery": 0.801319474786234,
+   "asset_recovery": 0.11448380198380198,
+   "dens_ok": 0.3160919540229885,
+   "crit_recall": 0.06666666666666667,
+   "path_len_m": 50.213203435596384,
+   "n_stations": 2,
+   "ig_per_m": 0.015958342028785495
+  },
+  {
+   "awc_gap_recovery": 0.9137533523278052,
+   "asset_recovery": 0.6126523208148892,
+   "dens_ok": 0.41762452107279696,
+   "crit_recall": 0.6,
+   "path_len_m": 90.75483399593897,
+   "n_stations": 3,
+   "ig_per_m": 0.010068371150000597
+  },
+  {
+   "awc_gap_recovery": 0.9449400280718891,
+   "asset_recovery": 0.8256224630883101,
+   "dens_ok": 0.5153256704980843,
+   "crit_recall": 0.8666666666666667,
+   "path_len_m": 137.16904755831206,
+   "n_stations": 4,
+   "ig_per_m": 0.0068888721245234635
+  },
+  {
+   "awc_gap_recovery": 0.9449400280718891,
+   "asset_recovery": 0.8256224630883101,
+   "dens_ok": 0.5191570881226054,
+   "crit_recall": 0.8666666666666667,
+   "path_len_m": 186.9429111656883,
+   "n_stations": 5,
+   "ig_per_m": 0.005054698368500236
+  }
+ ],
+ "final": {
+  "awc_gap_recovery": 0.9449400280718891,
+  "asset_recovery": 0.8256224630883101,
+  "dens_ok": 0.5191570881226054,
+  "crit_recall": 0.8666666666666667,
+  "path_len_m": 186.9429111656883,
+  "n_stations": 5,
+  "ig_per_m": 0.005054698368500236
+ },
+ "registration": [],
+ "status": "ok",
+ "family": "S",
+ "density": "low",
+ "scene": "scene_S_low",
+ "scene_seed": 2,
+ "n_full_stations": 13,
+ "stations_budget": 5,
+ "n_patches": 522,
+ "config_hash": "7016dc479a",
+ "git_commit": "a7a24fa",
+ "runtime_s": 0.6
+}

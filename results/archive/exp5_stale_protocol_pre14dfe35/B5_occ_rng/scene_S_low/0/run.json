@@ -1,0 +1,81 @@
+{
+ "method": "B5_occ_rng",
+ "seed": 0,
+ "history": [
+  {
+   "awc_gap_recovery": 0.0,
+   "asset_recovery": 0.0,
+   "dens_ok": 0.30228136882129275,
+   "crit_recall": 0.0,
+   "path_len_m": 0.0,
+   "n_stations": 0,
+   "ig_per_m": 0.0
+  },
+  {
+   "awc_gap_recovery": 0.3930156230287711,
+   "asset_recovery": 0.05916939950462329,
+   "dens_ok": 0.30988593155893535,
+   "crit_recall": 0.020833333333333332,
+   "path_len_m": 34.566756826189675,
+   "n_stations": 1,
+   "ig_per_m": 0.011369756931636723
+  },
+  {
+   "awc_gap_recovery": 0.817010332931738,
+   "asset_recovery": 0.1188674676916558,
+   "dens_ok": 0.3193916349809886,
+   "crit_recall": 0.041666666666666664,
+   "path_len_m": 54.67031021678295,
+   "n_stations": 2,
+   "ig_per_m": 0.01494431492508576
+  },
+  {
+   "awc_gap_recovery": 0.817010332931738,
+   "asset_recovery": 0.1188674676916558,
+   "dens_ok": 0.32129277566539927,
+   "crit_recall": 0.041666666666666664,
+   "path_len_m": 70.1274169979695,
+   "n_stations": 3,
+   "ig_per_m": 0.011650369682878723
+  },
+  {
+   "awc_gap_recovery": 0.947492412532668,
+   "asset_recovery": 0.5756612330005341,
+   "dens_ok": 0.43346007604562736,
+   "crit_recall": 0.5,
+   "path_len_m": 121.0624458405139,
+   "n_stations": 4,
+   "ig_per_m": 0.007826476707573563
+  },
+  {
+   "awc_gap_recovery": 0.9876863883624653,
+   "asset_recovery": 0.8820958646616541,
+   "dens_ok": 0.5456273764258555,
+   "crit_recall": 0.875,
+   "path_len_m": 167.37310601229373,
+   "n_stations": 5,
+   "ig_per_m": 0.005901105690719026
+  }
+ ],
+ "final": {
+  "awc_gap_recovery": 0.9876863883624653,
+  "asset_recovery": 0.8820958646616541,
+  "dens_ok": 0.5456273764258555,
+  "crit_recall": 0.875,
+  "path_len_m": 167.37310601229373,
+  "n_stations": 5,
+  "ig_per_m": 0.005901105690719026
+ },
+ "registration": [],
+ "status": "ok",
+ "family": "S",
+ "density": "low",
+ "scene": "scene_S_low",
+ "scene_seed": 0,
+ "n_full_stations": 13,
+ "stations_budget": 5,
+ "n_patches": 526,
+ "config_hash": "7016dc479a",
+ "git_commit": "a7a24fa",
+ "runtime_s": 31.2
+}

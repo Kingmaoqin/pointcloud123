@@ -1,0 +1,141 @@
+{
+ "method": "Bdisp_maxmin",
+ "seed": 0,
+ "history": [
+  {
+   "awc_gap_recovery": 0.0,
+   "asset_recovery": 0.0,
+   "dens_ok": 0.18544600938967137,
+   "dens_ok_full_ref": 0.7394366197183099,
+   "dens_ok_vs_full": 0.2507936507936508,
+   "crit_recall": 0.0,
+   "path_len_m": 0.0,
+   "n_stations": 0,
+   "ig_per_m": 0.0
+  },
+  {
+   "awc_gap_recovery": 0.32310935959280584,
+   "asset_recovery": 0.6850597168135898,
+   "dens_ok": 0.2511737089201878,
+   "dens_ok_full_ref": 0.7394366197183099,
+   "dens_ok_vs_full": 0.3396825396825397,
+   "crit_recall": 0.6272727272727273,
+   "path_len_m": 33.298989873223306,
+   "n_stations": 1,
+   "ig_per_m": 0.009703278112127586
+  },
+  {
+   "awc_gap_recovery": 0.6563477490804832,
+   "asset_recovery": 0.7513589248150211,
+   "dens_ok": 0.2652582159624413,
+   "dens_ok_full_ref": 0.7394366197183099,
+   "dens_ok_vs_full": 0.35873015873015873,
+   "crit_recall": 0.7090909090909091,
+   "path_len_m": 92.0728534805996,
+   "n_stations": 2,
+   "ig_per_m": 0.007128569651844018
+  },
+  {
+   "awc_gap_recovery": 0.693871570400826,
+   "asset_recovery": 0.7716100764831951,
+   "dens_ok": 0.2805164319248826,
+   "dens_ok_full_ref": 0.7394366197183099,
+   "dens_ok_vs_full": 0.37936507936507935,
+   "crit_recall": 0.7454545454545455,
+   "path_len_m": 122.67640687119288,
+   "n_stations": 3,
+   "ig_per_m": 0.00565611259815731
+  },
+  {
+   "awc_gap_recovery": 0.788817513338633,
+   "asset_recovery": 0.9101313586211407,
+   "dens_ok": 0.3626760563380282,
+   "dens_ok_full_ref": 0.7394366197183099,
+   "dens_ok_vs_full": 0.4904761904761905,
+   "crit_recall": 0.8909090909090909,
+   "path_len_m": 182.4251442127221,
+   "n_stations": 4,
+   "ig_per_m": 0.0043240613389281994
+  },
+  {
+   "awc_gap_recovery": 0.7978633544596035,
+   "asset_recovery": 0.9299943723197709,
+   "dens_ok": 0.3685446009389671,
+   "dens_ok_full_ref": 0.7394366197183099,
+   "dens_ok_vs_full": 0.49841269841269836,
+   "crit_recall": 0.9090909090909091,
+   "path_len_m": 238.0096679918782,
+   "n_stations": 5,
+   "ig_per_m": 0.003352230861843939
+  },
+  {
+   "awc_gap_recovery": 0.8013816497033254,
+   "asset_recovery": 0.9535674316805016,
+   "dens_ok": 0.392018779342723,
+   "dens_ok_full_ref": 0.7394366197183099,
+   "dens_ok_vs_full": 0.5301587301587302,
+   "crit_recall": 0.9272727272727272,
+   "path_len_m": 332.23937572197036,
+   "n_stations": 6,
+   "ig_per_m": 0.002412061026667561
+  },
+  {
+   "awc_gap_recovery": 0.8507435182647379,
+   "asset_recovery": 0.9710712368555396,
+   "dens_ok": 0.42018779342723006,
+   "dens_ok_full_ref": 0.7394366197183099,
+   "dens_ok_vs_full": 0.5682539682539682,
+   "crit_recall": 0.9636363636363636,
+   "path_len_m": 403.65358928434347,
+   "n_stations": 7,
+   "ig_per_m": 0.0021076079610070145
+  },
+  {
+   "awc_gap_recovery": 0.8507435182647379,
+   "asset_recovery": 0.9710712368555396,
+   "dens_ok": 0.4213615023474178,
+   "dens_ok_full_ref": 0.7394366197183099,
+   "dens_ok_vs_full": 0.5698412698412698,
+   "crit_recall": 0.9636363636363636,
+   "path_len_m": 499.82999615553643,
+   "n_stations": 8,
+   "ig_per_m": 0.0017020657519722059
+  },
+  {
+   "awc_gap_recovery": 0.853499987797649,
+   "asset_recovery": 0.9712836657677214,
+   "dens_ok": 0.5234741784037559,
+   "dens_ok_full_ref": 0.7394366197183099,
+   "dens_ok_vs_full": 0.707936507936508,
+   "crit_recall": 0.9636363636363636,
+   "path_len_m": 539.3820343559647,
+   "n_stations": 9,
+   "ig_per_m": 0.0015823663626778907
+  }
+ ],
+ "final": {
+  "awc_gap_recovery": 0.853499987797649,
+  "asset_recovery": 0.9712836657677214,
+  "dens_ok": 0.5234741784037559,
+  "dens_ok_full_ref": 0.7394366197183099,
+  "dens_ok_vs_full": 0.707936507936508,
+  "crit_recall": 0.9636363636363636,
+  "path_len_m": 539.3820343559647,
+  "n_stations": 9,
+  "ig_per_m": 0.0015823663626778907,
+  "stop_reason": "rounds"
+ },
+ "registration": [],
+ "status": "ok",
+ "family": "L",
+ "density": "low",
+ "scene": "scene_L_low",
+ "scene_seed": 0,
+ "n_full_stations": 46,
+ "n_components": 80,
+ "stations_budget": 9,
+ "n_patches": 852,
+ "config_hash": "23e6699a18",
+ "git_commit": "30ed463-dirty",
+ "runtime_s": 4.8
+}

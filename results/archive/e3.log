@@ -1,0 +1,302 @@
+[e3] config_hash=0cf97f5ede commit=8d90756
+[e3] n_temp=0 scene_S_low/seed0: patches=526 gaps=64 vis_mae=0.0000
+[e3]   Bdisp_maxmin   awc=0.881 crit=0.750 (0.8s)
+[e3]   B1_patent      awc=0.811 crit=0.167 (19.4s)
+[e3]   B5_occ_rng     awc=0.988 crit=0.875 (32.3s)
+[e3]   B10_full       awc=0.988 crit=0.875 (33.0s)
+[e3] n_temp=0 scene_S_low/seed1: patches=486 gaps=41 vis_mae=0.0000
+[e3]   Bdisp_maxmin   awc=0.978 crit=0.926 (1.2s)
+[e3]   B1_patent      awc=0.677 crit=0.111 (23.2s)
+[e3]   B5_occ_rng     awc=0.981 crit=0.963 (33.3s)
+[e3]   B10_full       awc=0.988 crit=1.000 (46.3s)
+[e3] n_temp=0 scene_S_low/seed2: patches=522 gaps=48 vis_mae=0.0000
+[e3]   Bdisp_maxmin   awc=0.945 crit=0.867 (0.9s)
+[e3]   B1_patent      awc=0.835 crit=0.067 (25.5s)
+[e3]   B5_occ_rng     awc=0.981 crit=0.900 (45.7s)
+[e3]   B10_full       awc=0.975 crit=0.900 (38.0s)
+[e3] n_temp=0 scene_S_low/seed3: patches=516 gaps=50 vis_mae=0.0000
+[e3]   Bdisp_maxmin   awc=0.983 crit=0.735 (0.7s)
+[e3]   B1_patent      awc=0.852 crit=0.294 (19.9s)
+[e3]   B5_occ_rng     awc=0.993 crit=0.882 (31.4s)
+[e3]   B10_full       awc=0.993 crit=0.882 (34.9s)
+[e3] n_temp=0 scene_S_low/seed4: patches=522 gaps=45 vis_mae=0.0000
+[e3]   Bdisp_maxmin   awc=0.890 crit=0.793 (0.8s)
+[e3]   B1_patent      awc=0.817 crit=0.172 (23.8s)
+[e3]   B5_occ_rng     awc=0.984 crit=0.724 (32.1s)
+[e3]   B10_full       awc=0.984 crit=0.724 (36.6s)
+[e3] n_temp=0 scene_S_mid/seed0: patches=682 gaps=57 vis_mae=0.0000
+[e3]   Bdisp_maxmin   awc=0.997 crit=0.975 (2.4s)
+[e3]   B1_patent      awc=0.906 crit=0.375 (24.8s)
+[e3]   B5_occ_rng     awc=0.984 crit=0.900 (34.9s)
+[e3]   B10_full       awc=0.996 crit=0.975 (46.0s)
+[e3] n_temp=0 scene_S_mid/seed1: patches=654 gaps=61 vis_mae=0.0000
+[e3]   Bdisp_maxmin   awc=0.867 crit=0.886 (1.1s)
+[e3]   B1_patent      awc=0.864 crit=0.159 (17.8s)
+[e3]   B5_occ_rng     awc=0.985 crit=0.886 (27.1s)
+[e3]   B10_full       awc=0.997 crit=0.977 (35.0s)
+[e3] n_temp=0 scene_S_mid/seed2: patches=672 gaps=55 vis_mae=0.0000
+[e3]   Bdisp_maxmin   awc=0.974 crit=0.917 (2.3s)
+[e3]   B1_patent      awc=0.968 crit=0.722 (29.8s)
+[e3]   B5_occ_rng     awc=0.976 crit=0.889 (41.9s)
+[e3]   B10_full       awc=0.976 crit=0.889 (59.6s)
+[e3] n_temp=0 scene_S_mid/seed3: patches=670 gaps=70 vis_mae=0.0000
+[e3]   Bdisp_maxmin   awc=0.958 crit=0.857 (1.0s)
+[e3]   B1_patent      awc=0.903 crit=0.469 (17.1s)
+[e3]   B5_occ_rng     awc=0.977 crit=0.980 (36.4s)
+[e3]   B10_full       awc=0.984 crit=1.000 (58.6s)
+[e3] n_temp=0 scene_S_mid/seed4: patches=706 gaps=54 vis_mae=0.0000
+[e3]   Bdisp_maxmin   awc=0.993 crit=0.889 (2.6s)
+[e3]   B1_patent      awc=0.923 crit=0.083 (22.5s)
+[e3]   B5_occ_rng     awc=0.985 crit=0.806 (32.7s)
+[e3]   B10_full       awc=0.986 crit=0.833 (60.6s)
+[e3] n_temp=0 scene_M_mid/seed0: patches=846 gaps=91 vis_mae=0.0000
+[e3]   Bdisp_maxmin   awc=0.868 crit=0.957 (1.1s)
+[e3]   B1_patent      awc=0.529 crit=0.271 (129.2s)
+[e3]   B5_occ_rng     awc=0.823 crit=0.929 (137.5s)
+[e3]   B10_full       awc=0.984 crit=0.957 (110.1s)
+[e3] n_temp=0 scene_M_mid/seed1: patches=858 gaps=90 vis_mae=0.0000
+[e3]   Bdisp_maxmin   awc=0.767 crit=0.735 (1.5s)
+[e3]   B1_patent      awc=0.527 crit=0.235 (97.5s)
+[e3]   B5_occ_rng     awc=0.761 crit=0.882 (123.5s)
+[e3]   B10_full       awc=0.849 crit=0.971 (124.4s)
+[e3] n_temp=0 scene_M_mid/seed2: patches=864 gaps=83 vis_mae=0.0000
+[e3]   Bdisp_maxmin   awc=0.789 crit=0.758 (2.0s)
+[e3]   B1_patent      awc=0.514 crit=0.194 (100.1s)
+[e3]   B5_occ_rng     awc=0.778 crit=0.855 (120.3s)
+[e3]   B10_full       awc=0.956 crit=0.919 (187.7s)
+[e3] n_temp=0 scene_M_mid/seed3: patches=840 gaps=89 vis_mae=0.0000
+[e3]   Bdisp_maxmin   awc=0.847 crit=0.944 (1.1s)
+[e3]   B1_patent      awc=0.543 crit=0.250 (118.0s)
+[e3]   B5_occ_rng     awc=0.959 crit=0.903 (127.1s)
+[e3]   B10_full       awc=0.982 crit=0.889 (152.2s)
+[e3] n_temp=0 scene_M_mid/seed4: patches=898 gaps=97 vis_mae=0.0000
+[e3]   Bdisp_maxmin   awc=0.876 crit=0.870 (2.1s)
+[e3]   B1_patent      awc=0.593 crit=0.247 (71.7s)
+[e3]   B5_occ_rng     awc=0.823 crit=0.948 (93.8s)
+[e3]   B10_full       awc=0.824 crit=0.935 (141.0s)
+[e3] n_temp=3 scene_S_low/seed0: patches=526 gaps=94 vis_mae=0.0905
+[e3]   Bdisp_maxmin   awc=0.970 crit=0.774 (0.7s)
+[e3]   B1_patent      awc=0.847 crit=0.161 (19.2s)
+[e3]   B5_occ_rng     awc=0.985 crit=0.871 (29.0s)
+[e3]   B10_full       awc=0.988 crit=0.871 (35.3s)
+[e3] n_temp=3 scene_S_low/seed1: patches=486 gaps=67 vis_mae=0.0667
+[e3]   Bdisp_maxmin   awc=0.962 crit=0.830 (1.3s)
+[e3]   B1_patent      awc=0.670 crit=0.321 (24.7s)
+[e3]   B5_occ_rng     awc=0.962 crit=0.792 (31.2s)
+[e3]   B10_full       awc=0.981 crit=0.925 (44.2s)
+[e3] n_temp=3 scene_S_low/seed2: patches=522 gaps=73 vis_mae=0.0762
+[e3]   Bdisp_maxmin   awc=0.985 crit=0.909 (1.0s)
+[e3]   B1_patent      awc=0.800 crit=0.136 (28.8s)
+[e3]   B5_occ_rng     awc=0.980 crit=0.909 (41.7s)
+[e3]   B10_full       awc=0.980 crit=0.909 (54.2s)
+[e3] n_temp=3 scene_S_low/seed3: patches=516 gaps=66 vis_mae=0.0509
+[e3]   Bdisp_maxmin   awc=0.986 crit=0.860 (0.7s)
+[e3]   B1_patent      awc=0.846 crit=0.300 (19.8s)
+[e3]   B5_occ_rng     awc=0.935 crit=0.820 (29.5s)
+[e3]   B10_full       awc=0.933 crit=0.780 (33.1s)
+[e3] n_temp=3 scene_S_low/seed4: patches=522 gaps=64 vis_mae=0.0615
+[e3]   Bdisp_maxmin   awc=0.889 crit=0.958 (0.8s)
+[e3]   B1_patent      awc=0.873 crit=0.271 (25.0s)
+[e3]   B5_occ_rng     awc=0.951 crit=0.833 (35.3s)
+[e3]   B10_full       awc=0.951 crit=0.833 (46.7s)
+[e3] n_temp=3 scene_S_mid/seed0: patches=682 gaps=80 vis_mae=0.0623
+[e3]   Bdisp_maxmin   awc=0.976 crit=0.857 (2.6s)
+[e3]   B1_patent      awc=0.864 crit=0.321 (28.0s)
+[e3]   B5_occ_rng     awc=0.978 crit=0.911 (40.6s)
+[e3]   B10_full       awc=0.977 crit=0.929 (48.0s)
+[e3] n_temp=3 scene_S_mid/seed1: patches=654 gaps=107 vis_mae=0.0609
+[e3]   Bdisp_maxmin   awc=0.941 crit=0.881 (1.4s)
+[e3]   B1_patent      awc=0.788 crit=0.500 (19.8s)
+[e3]   B5_occ_rng     awc=0.970 crit=0.893 (29.2s)
+[e3]   B10_full       awc=0.976 crit=0.917 (31.2s)
+[e3] n_temp=3 scene_S_mid/seed2: patches=672 gaps=57 vis_mae=0.0788
+[e3]   Bdisp_maxmin   awc=0.990 crit=0.902 (2.4s)
+[e3]   B1_patent      awc=0.964 crit=0.732 (30.5s)
+[e3]   B5_occ_rng     awc=0.952 crit=0.805 (43.7s)
+[e3]   B10_full       awc=0.953 crit=0.805 (49.8s)
+[e3] n_temp=3 scene_S_mid/seed3: patches=670 gaps=96 vis_mae=0.0462
+[e3]   Bdisp_maxmin   awc=0.836 crit=0.676 (1.3s)
+[e3]   B1_patent      awc=0.850 crit=0.507 (18.3s)
+[e3]   B5_occ_rng     awc=0.937 crit=0.859 (30.1s)
+[e3]   B10_full       awc=0.965 crit=0.972 (40.3s)
+[e3] n_temp=3 scene_S_mid/seed4: patches=706 gaps=67 vis_mae=0.0445
+[e3]   Bdisp_maxmin   awc=0.980 crit=0.796 (3.4s)
+[e3]   B1_patent      awc=0.899 crit=0.143 (22.0s)
+[e3]   B5_occ_rng     awc=0.983 crit=0.837 (32.9s)
+[e3]   B10_full       awc=0.983 crit=0.857 (56.1s)
+[e3] n_temp=3 scene_M_mid/seed0: patches=846 gaps=124 vis_mae=0.0700
+[e3]   Bdisp_maxmin   awc=0.864 crit=0.915 (1.5s)
+[e3]   B1_patent      awc=0.496 crit=0.213 (114.2s)
+[e3]   B5_occ_rng     awc=0.853 crit=0.926 (130.8s)
+[e3]   B10_full       awc=0.991 crit=0.957 (107.9s)
+[e3] n_temp=3 scene_M_mid/seed1: patches=858 gaps=121 vis_mae=0.0424
+[e3]   Bdisp_maxmin   awc=0.851 crit=0.918 (1.2s)
+[e3]   B1_patent      awc=0.507 crit=0.155 (101.9s)
+[e3]   B5_occ_rng     awc=0.754 crit=0.897 (123.5s)
+[e3]   B10_full       awc=0.866 crit=0.938 (109.7s)
+[e3] n_temp=3 scene_M_mid/seed2: patches=864 gaps=96 vis_mae=0.0336
+[e3]   Bdisp_maxmin   awc=0.813 crit=0.865 (1.3s)
+[e3]   B1_patent      awc=0.513 crit=0.257 (90.7s)
+[e3]   B5_occ_rng     awc=0.729 crit=0.878 (112.0s)
+[e3]   B10_full       awc=0.810 crit=0.892 (114.3s)
+[e3] n_temp=3 scene_M_mid/seed3: patches=840 gaps=128 vis_mae=0.0532
+[e3]   Bdisp_maxmin   awc=0.781 crit=0.862 (1.3s)
+[e3]   B1_patent      awc=0.524 crit=0.294 (112.9s)
+[e3]   B5_occ_rng     awc=0.811 crit=0.908 (122.9s)
+[e3]   B10_full       awc=0.955 crit=0.972 (114.8s)
+[e3] n_temp=3 scene_M_mid/seed4: patches=898 gaps=116 vis_mae=0.0590
+[e3]   Bdisp_maxmin   awc=0.879 crit=0.847 (1.2s)
+[e3]   B1_patent      awc=0.591 crit=0.282 (68.1s)
+[e3]   B5_occ_rng     awc=0.793 crit=0.906 (88.9s)
+[e3]   B10_full       awc=0.824 crit=0.929 (91.1s)
+[e3] n_temp=6 scene_S_low/seed0: patches=526 gaps=106 vis_mae=0.1116
+[e3]   Bdisp_maxmin   awc=0.966 crit=0.782 (0.7s)
+[e3]   B1_patent      awc=0.819 crit=0.192 (18.9s)
+[e3]   B5_occ_rng     awc=0.901 crit=0.808 (26.8s)
+[e3]   B10_full       awc=0.983 crit=0.885 (26.7s)
+[e3] n_temp=6 scene_S_low/seed1: patches=486 gaps=88 vis_mae=0.1025
+[e3]   Bdisp_maxmin   awc=0.943 crit=0.770 (1.0s)
+[e3]   B1_patent      awc=0.713 crit=0.243 (27.8s)
+[e3]   B5_occ_rng     awc=0.959 crit=0.824 (40.2s)
+[e3]   B10_full       awc=0.966 crit=0.878 (42.8s)
+[e3] n_temp=6 scene_S_low/seed2: patches=522 gaps=76 vis_mae=0.0891
+[e3]   Bdisp_maxmin   awc=0.976 crit=0.761 (0.7s)
+[e3]   B1_patent      awc=0.873 crit=0.152 (27.9s)
+[e3]   B5_occ_rng     awc=0.979 crit=0.870 (37.1s)
+[e3]   B10_full       awc=0.979 crit=0.870 (39.8s)
+[e3] n_temp=6 scene_S_low/seed3: patches=516 gaps=87 vis_mae=0.1106
+[e3]   Bdisp_maxmin   awc=0.977 crit=0.825 (0.8s)
+[e3]   B1_patent      awc=0.825 crit=0.193 (18.6s)
+[e3]   B5_occ_rng     awc=0.974 crit=0.789 (24.0s)
+[e3]   B10_full       awc=0.974 crit=0.789 (26.8s)
+[e3] n_temp=6 scene_S_low/seed4: patches=522 gaps=68 vis_mae=0.0881
+[e3]   Bdisp_maxmin   awc=0.991 crit=0.942 (0.8s)
+[e3]   B1_patent      awc=0.846 crit=0.269 (27.6s)
+[e3]   B5_occ_rng     awc=0.943 crit=0.846 (33.5s)
+[e3]   B10_full       awc=0.943 crit=0.846 (38.2s)
+[e3] n_temp=6 scene_S_mid/seed0: patches=682 gaps=109 vis_mae=0.1205
+[e3]   Bdisp_maxmin   awc=0.972 crit=0.933 (2.2s)
+[e3]   B1_patent      awc=0.848 crit=0.427 (23.8s)
+[e3]   B5_occ_rng     awc=0.938 crit=0.876 (38.7s)
+[e3]   B10_full       awc=0.954 crit=0.899 (42.2s)
+[e3] n_temp=6 scene_S_mid/seed1: patches=654 gaps=119 vis_mae=0.0939
+[e3]   Bdisp_maxmin   awc=0.970 crit=0.851 (1.2s)
+[e3]   B1_patent      awc=0.852 crit=0.425 (18.1s)
+[e3]   B5_occ_rng     awc=0.975 crit=0.897 (26.2s)
+[e3]   B10_full       awc=0.981 crit=0.920 (53.4s)
+[e3] n_temp=6 scene_S_mid/seed2: patches=672 gaps=99 vis_mae=0.1380
+[e3]   Bdisp_maxmin   awc=0.975 crit=0.940 (2.9s)
+[e3]   B1_patent      awc=0.761 crit=0.193 (50.3s)
+[e3]   B5_occ_rng     awc=0.971 crit=0.916 (46.9s)
+[e3]   B10_full       awc=0.971 crit=0.916 (60.2s)
+[e3] n_temp=6 scene_S_mid/seed3: patches=670 gaps=115 vis_mae=0.0935
+[e3]   Bdisp_maxmin   awc=0.905 crit=0.841 (1.0s)
+[e3]   B1_patent      awc=0.821 crit=0.500 (27.6s)
+[e3]   B5_occ_rng     awc=0.935 crit=0.890 (38.2s)
+[e3]   B10_full       awc=0.952 crit=0.890 (59.3s)
+[e3] n_temp=6 scene_S_mid/seed4: patches=706 gaps=71 vis_mae=0.0501
+[e3]   Bdisp_maxmin   awc=0.958 crit=0.865 (3.3s)
+[e3]   B1_patent      awc=0.900 crit=0.135 (25.9s)
+[e3]   B5_occ_rng     awc=0.952 crit=0.750 (39.5s)
+[e3]   B10_full       awc=0.934 crit=0.769 (66.3s)
+[e3] n_temp=6 scene_M_mid/seed0: patches=846 gaps=141 vis_mae=0.0855
+[e3]   Bdisp_maxmin   awc=0.868 crit=0.929 (1.3s)
+[e3]   B1_patent      awc=0.534 crit=0.286 (130.6s)
+[e3]   B5_occ_rng     awc=0.806 crit=0.920 (135.0s)
+[e3]   B10_full       awc=0.985 crit=0.946 (118.5s)
+[e3] n_temp=6 scene_M_mid/seed1: patches=858 gaps=140 vis_mae=0.0738
+[e3]   Bdisp_maxmin   awc=0.761 crit=0.813 (1.2s)
+[e3]   B1_patent      awc=0.621 crit=0.542 (103.1s)
+[e3]   B5_occ_rng     awc=0.748 crit=0.897 (126.2s)
+[e3]   B10_full       awc=0.808 crit=0.925 (152.7s)
+[e3] n_temp=6 scene_M_mid/seed2: patches=864 gaps=100 vis_mae=0.0599
+[e3]   Bdisp_maxmin   awc=0.775 crit=0.853 (2.4s)
+[e3]   B1_patent      awc=0.527 crit=0.240 (111.6s)
+[e3]   B5_occ_rng     awc=0.732 crit=0.880 (124.9s)
+[e3]   B10_full       awc=0.815 crit=0.893 (171.0s)
+[e3] n_temp=6 scene_M_mid/seed3: patches=840 gaps=158 vis_mae=0.0874
+[e3]   Bdisp_maxmin   awc=0.817 crit=0.915 (1.9s)
+[e3]   B1_patent      awc=0.457 crit=0.227 (116.6s)
+[e3]   B5_occ_rng     awc=0.864 crit=0.943 (124.7s)
+[e3]   B10_full       awc=0.949 crit=0.972 (133.9s)
+[e3] n_temp=6 scene_M_mid/seed4: patches=898 gaps=138 vis_mae=0.0771
+[e3]   Bdisp_maxmin   awc=0.913 crit=0.909 (1.2s)
+[e3]   B1_patent      awc=0.552 crit=0.318 (77.9s)
+[e3]   B5_occ_rng     awc=0.805 crit=0.909 (105.8s)
+[e3]   B10_full       awc=0.881 crit=0.936 (141.2s)
+[e3] n_temp=9 scene_S_low/seed0: patches=526 gaps=120 vis_mae=0.1575
+[e3]   Bdisp_maxmin   awc=0.780 crit=0.688 (1.0s)
+[e3]   B1_patent      awc=0.786 crit=0.075 (27.9s)
+[e3]   B5_occ_rng     awc=0.981 crit=0.849 (37.4s)
+[e3]   B10_full       awc=0.982 crit=0.871 (64.8s)
+[e3] n_temp=9 scene_S_low/seed1: patches=486 gaps=86 vis_mae=0.1238
+[e3]   Bdisp_maxmin   awc=0.943 crit=0.726 (3.3s)
+[e3]   B1_patent      awc=0.808 crit=0.301 (42.3s)
+[e3]   B5_occ_rng     awc=0.979 crit=0.849 (67.5s)
+[e3]   B10_full       awc=0.983 crit=0.890 (92.2s)
+[e3] n_temp=9 scene_S_low/seed2: patches=522 gaps=81 vis_mae=0.0984
+[e3]   Bdisp_maxmin   awc=0.912 crit=0.717 (1.8s)
+[e3]   B1_patent      awc=0.863 crit=0.075 (46.6s)
+[e3]   B5_occ_rng     awc=0.925 crit=0.604 (43.3s)
+[e3]   B10_full       awc=0.921 crit=0.623 (111.4s)
+[e3] n_temp=9 scene_S_low/seed3: patches=516 gaps=93 vis_mae=0.1372
+[e3]   Bdisp_maxmin   awc=0.967 crit=0.757 (0.9s)
+[e3]   B1_patent      awc=0.821 crit=0.243 (28.7s)
+[e3]   B5_occ_rng     awc=0.968 crit=0.871 (26.6s)
+[e3]   B10_full       awc=0.885 crit=0.771 (35.9s)
+[e3] n_temp=9 scene_S_low/seed4: patches=522 gaps=87 vis_mae=0.1136
+[e3]   Bdisp_maxmin   awc=0.990 crit=0.918 (1.0s)
+[e3]   B1_patent      awc=0.856 crit=0.192 (26.1s)
+[e3]   B5_occ_rng     awc=0.906 crit=0.849 (86.6s)
+[e3]   B10_full       awc=0.906 crit=0.849 (137.0s)
+[e3] n_temp=9 scene_S_mid/seed0: patches=682 gaps=103 vis_mae=0.1330
+[e3]   Bdisp_maxmin   awc=0.952 crit=0.871 (4.1s)
+[e3]   B1_patent      awc=0.832 crit=0.376 (40.3s)
+[e3]   B5_occ_rng     awc=0.953 crit=0.882 (104.6s)
+[e3]   B10_full       awc=0.956 crit=0.894 (128.4s)
+[e3] n_temp=9 scene_S_mid/seed1: patches=654 gaps=117 vis_mae=0.0981
+[e3]   Bdisp_maxmin   awc=0.877 crit=0.744 (1.9s)
+[e3]   B1_patent      awc=0.864 crit=0.198 (36.4s)
+[e3]   B5_occ_rng     awc=0.968 crit=0.895 (66.4s)
+[e3]   B10_full       awc=0.959 crit=0.930 (119.2s)
+[e3] n_temp=9 scene_S_mid/seed2: patches=672 gaps=107 vis_mae=0.1510
+[e3]   Bdisp_maxmin   awc=0.966 crit=0.955 (5.9s)
+[e3]   B1_patent      awc=0.767 crit=0.182 (64.9s)
+[e3]   B5_occ_rng     awc=0.961 crit=0.875 (94.8s)
+[e3]   B10_full       awc=0.961 crit=0.875 (160.3s)
+[e3] n_temp=9 scene_S_mid/seed3: patches=670 gaps=151 vis_mae=0.1392
+[e3]   Bdisp_maxmin   awc=0.757 crit=0.691 (2.5s)
+[e3]   B1_patent      awc=0.753 crit=0.447 (41.9s)
+[e3]   B5_occ_rng     awc=0.862 crit=0.846 (90.7s)
+[e3]   B10_full       awc=0.876 crit=0.854 (133.9s)
+[e3] n_temp=9 scene_S_mid/seed4: patches=706 gaps=96 vis_mae=0.0953
+[e3]   Bdisp_maxmin   awc=0.741 crit=0.857 (4.5s)
+[e3]   B1_patent      awc=0.890 crit=0.234 (50.6s)
+[e3]   B5_occ_rng     awc=0.939 crit=0.675 (96.9s)
+[e3]   B10_full       awc=0.921 crit=0.688 (216.5s)
+[e3] n_temp=9 scene_M_mid/seed0: patches=846 gaps=189 vis_mae=0.1129
+[e3]   Bdisp_maxmin   awc=0.783 crit=0.826 (4.2s)
+[e3]   B1_patent      awc=0.544 crit=0.438 (204.1s)
+[e3]   B5_occ_rng     awc=0.854 crit=0.799 (144.7s)
+[e3]   B10_full       awc=0.958 crit=0.931 (168.9s)
+[e3] n_temp=9 scene_M_mid/seed1: patches=858 gaps=186 vis_mae=0.1300
+[e3]   Bdisp_maxmin   awc=0.760 crit=0.795 (2.4s)
+[e3]   B1_patent      awc=0.632 crit=0.610 (112.0s)
+[e3]   B5_occ_rng     awc=0.749 crit=0.877 (152.0s)
+[e3]   B10_full       awc=0.801 crit=0.918 (186.2s)
+[e3] n_temp=9 scene_M_mid/seed2: patches=864 gaps=146 vis_mae=0.1080
+[e3]   Bdisp_maxmin   awc=0.825 crit=0.847 (1.2s)
+[e3]   B1_patent      awc=0.539 crit=0.271 (109.3s)
+[e3]   B5_occ_rng     awc=0.743 crit=0.822 (156.1s)
+[e3]   B10_full       awc=0.735 crit=0.831 (234.4s)
+[e3] n_temp=9 scene_M_mid/seed3: patches=840 gaps=175 vis_mae=0.1154
+[e3]   Bdisp_maxmin   awc=0.825 crit=0.902 (1.5s)
+[e3]   B1_patent      awc=0.625 crit=0.575 (147.5s)
+[e3]   B5_occ_rng     awc=0.876 crit=0.889 (163.1s)
+[e3]   B10_full       awc=0.842 crit=0.928 (265.1s)
+[e3] n_temp=9 scene_M_mid/seed4: patches=898 gaps=192 vis_mae=0.1327
+[e3]   Bdisp_maxmin   awc=0.894 crit=0.924 (2.1s)
+[e3]   B1_patent      awc=0.535 crit=0.304 (76.4s)
+[e3]   B5_occ_rng     awc=0.771 crit=0.766 (147.0s)
+[e3]   B10_full       awc=0.819 crit=0.899 (142.8s)
+[e3] summary → /home/xqin5/patent_gap_nbv/results/exp3/summary.md

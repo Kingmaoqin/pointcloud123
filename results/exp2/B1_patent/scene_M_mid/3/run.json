@@ -4,73 +4,99 @@
  "history": [
   {
    "awc_gap_recovery": 0.0,
+   "asset_recovery": 0.0,
    "dens_ok": 0.2654761904761905,
+   "dens_ok_full_ref": 0.5369047619047619,
+   "dens_ok_vs_full": 0.4944567627494457,
    "crit_recall": 0.0,
    "path_len_m": 0.0,
    "n_stations": 0,
    "ig_per_m": 0.0
   },
   {
-   "awc_gap_recovery": 0.4961810062931269,
-   "dens_ok": 0.2702380952380952,
-   "crit_recall": 0.013888888888888888,
-   "path_len_m": 45.506096654409845,
+   "awc_gap_recovery": 0.5450013730438944,
+   "asset_recovery": 0.07790922998470201,
+   "dens_ok": 0.2761904761904762,
+   "dens_ok_full_ref": 0.5369047619047619,
+   "dens_ok_vs_full": 0.5144124168514413,
+   "crit_recall": 0.06944444444444445,
+   "path_len_m": 46.26650429449548,
    "n_stations": 1,
-   "ig_per_m": 0.010903616059652605
+   "ig_per_m": 0.011779609922004318
   },
   {
-   "awc_gap_recovery": 0.49936668224142494,
-   "dens_ok": 0.27380952380952384,
-   "crit_recall": 0.041666666666666664,
-   "path_len_m": 54.62741699796949,
+   "awc_gap_recovery": 0.583951926631189,
+   "asset_recovery": 0.21128187149413616,
+   "dens_ok": 0.29285714285714287,
+   "dens_ok_full_ref": 0.5369047619047619,
+   "dens_ok_vs_full": 0.5454545454545455,
+   "crit_recall": 0.3055555555555556,
+   "path_len_m": 63.805086527633144,
    "n_stations": 2,
-   "ig_per_m": 0.009141319683117847
+   "ig_per_m": 0.009152121851261609
   },
   {
-   "awc_gap_recovery": 0.5339096236837715,
-   "dens_ok": 0.3238095238095238,
-   "crit_recall": 0.19444444444444445,
-   "path_len_m": 65.9380771697493,
+   "awc_gap_recovery": 0.7341884067863717,
+   "asset_recovery": 0.7248196073431923,
+   "dens_ok": 0.4107142857142857,
+   "dens_ok_full_ref": 0.5369047619047619,
+   "dens_ok_vs_full": 0.7649667405764967,
+   "crit_recall": 0.6388888888888888,
+   "path_len_m": 116.74747468305824,
    "n_stations": 3,
-   "ig_per_m": 0.00809713668642912
+   "ig_per_m": 0.006288687689215714
   },
   {
-   "awc_gap_recovery": 0.542774831249023,
-   "dens_ok": 0.33214285714285713,
-   "crit_recall": 0.25,
-   "path_len_m": 77.74137802864841,
+   "awc_gap_recovery": 0.7363365697158853,
+   "asset_recovery": 0.7295365884752678,
+   "dens_ok": 0.4119047619047619,
+   "dens_ok_full_ref": 0.5369047619047619,
+   "dens_ok_vs_full": 0.7671840354767184,
+   "crit_recall": 0.6527777777777778,
+   "path_len_m": 175.32590180780443,
    "n_stations": 4,
-   "ig_per_m": 0.006981801004980971
+   "ig_per_m": 0.00419981624006173
   },
   {
-   "awc_gap_recovery": 0.542774831249023,
-   "dens_ok": 0.3380952380952381,
-   "crit_recall": 0.25,
-   "path_len_m": 81.88046532517443,
+   "awc_gap_recovery": 0.7363365697158853,
+   "asset_recovery": 0.7295365884752678,
+   "dens_ok": 0.41904761904761906,
+   "dens_ok_full_ref": 0.5369047619047619,
+   "dens_ok_vs_full": 0.7804878048780488,
+   "crit_recall": 0.6527777777777778,
+   "path_len_m": 179.1794551983977,
    "n_stations": 5,
-   "ig_per_m": 0.006628868425374533
+   "ig_per_m": 0.0041094921786684275
   },
   {
-   "awc_gap_recovery": 0.542774831249023,
-   "dens_ok": 0.3380952380952381,
-   "crit_recall": 0.25,
-   "path_len_m": 88.58757210636098,
+   "awc_gap_recovery": 0.7382503297594152,
+   "asset_recovery": 0.7332708652048275,
+   "dens_ok": 0.4226190476190476,
+   "dens_ok_full_ref": 0.5369047619047619,
+   "dens_ok_vs_full": 0.7871396895787139,
+   "crit_recall": 0.6666666666666666,
+   "path_len_m": 184.98275605729683,
    "n_stations": 6,
-   "ig_per_m": 0.006126986193925156
+   "ig_per_m": 0.0039909143181473
   }
  ],
  "final": {
-  "awc_gap_recovery": 0.542774831249023,
-  "dens_ok": 0.3380952380952381,
-  "crit_recall": 0.25,
-  "path_len_m": 88.58757210636098,
+  "awc_gap_recovery": 0.7382503297594152,
+  "asset_recovery": 0.7332708652048275,
+  "dens_ok": 0.4226190476190476,
+  "dens_ok_full_ref": 0.5369047619047619,
+  "dens_ok_vs_full": 0.7871396895787139,
+  "crit_recall": 0.6666666666666666,
+  "path_len_m": 184.98275605729683,
   "n_stations": 6,
-  "ig_per_m": 0.006126986193925156
+  "ig_per_m": 0.0039909143181473,
+  "stop_reason": "rounds"
  },
+ "registration": [],
  "status": "ok",
- "config_hash": "b0263d9f95",
- "git_commit": "65b9bbb-dirty",
+ "config_hash": "54f6a8f7d8",
+ "git_commit": "30ed463-dirty",
  "scene": "scene_M_mid",
  "scene_seed": 3,
- "runtime_s": 119.76
+ "runtime_s": 10.23
 }

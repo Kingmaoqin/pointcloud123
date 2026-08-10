@@ -1,0 +1,108 @@
+{
+ "method": "Bdisp_maxmin",
+ "seed": 2,
+ "history": [
+  {
+   "awc_gap_recovery": 0.0,
+   "asset_recovery": 0.0,
+   "dens_ok": 0.23363095238095238,
+   "crit_recall": 0.0,
+   "path_len_m": 0.0,
+   "n_stations": 0,
+   "ig_per_m": 0.0
+  },
+  {
+   "awc_gap_recovery": 0.24916410130714717,
+   "asset_recovery": 0.6255178611434156,
+   "dens_ok": 0.3586309523809524,
+   "crit_recall": 0.6301369863013698,
+   "path_len_m": 48.30634918610403,
+   "n_stations": 1,
+   "ig_per_m": 0.005157999010590156
+  },
+  {
+   "awc_gap_recovery": 0.73138405894846,
+   "asset_recovery": 0.7201001985828961,
+   "dens_ok": 0.38095238095238093,
+   "crit_recall": 0.7534246575342466,
+   "path_len_m": 106.79036790187192,
+   "n_stations": 2,
+   "ig_per_m": 0.0068487830252679524
+  },
+  {
+   "awc_gap_recovery": 0.7409770160846779,
+   "asset_recovery": 0.720872399355097,
+   "dens_ok": 0.3943452380952381,
+   "crit_recall": 0.7534246575342466,
+   "path_len_m": 131.74747468305847,
+   "n_stations": 3,
+   "ig_per_m": 0.005624221776297628
+  },
+  {
+   "awc_gap_recovery": 0.795754440126138,
+   "asset_recovery": 0.8508769634324204,
+   "dens_ok": 0.49851190476190477,
+   "crit_recall": 0.9452054794520548,
+   "path_len_m": 188.1279400082329,
+   "n_stations": 4,
+   "ig_per_m": 0.004229857830215512
+  },
+  {
+   "awc_gap_recovery": 0.8573357091479498,
+   "asset_recovery": 0.9511028845462075,
+   "dens_ok": 0.53125,
+   "crit_recall": 0.9726027397260274,
+   "path_len_m": 229.10281374238582,
+   "n_stations": 5,
+   "ig_per_m": 0.003742143953377976
+  },
+  {
+   "awc_gap_recovery": 0.8609691877565392,
+   "asset_recovery": 0.974036472697187,
+   "dens_ok": 0.5505952380952381,
+   "crit_recall": 0.9863013698630136,
+   "path_len_m": 286.49190103891186,
+   "n_stations": 6,
+   "ig_per_m": 0.00300521300823649
+  },
+  {
+   "awc_gap_recovery": 0.8609691877565392,
+   "asset_recovery": 0.974036472697187,
+   "dens_ok": 0.5520833333333334,
+   "crit_recall": 0.9863013698630136,
+   "path_len_m": 319.74190103891186,
+   "n_stations": 7,
+   "ig_per_m": 0.002692700534271738
+  },
+  {
+   "awc_gap_recovery": 0.8668713654571323,
+   "asset_recovery": 0.994444635962493,
+   "dens_ok": 0.5580357142857143,
+   "crit_recall": 0.9863013698630136,
+   "path_len_m": 378.2167747730648,
+   "n_stations": 8,
+   "ig_per_m": 0.0022919960807588897
+  }
+ ],
+ "final": {
+  "awc_gap_recovery": 0.8668713654571323,
+  "asset_recovery": 0.994444635962493,
+  "dens_ok": 0.5580357142857143,
+  "crit_recall": 0.9863013698630136,
+  "path_len_m": 378.2167747730648,
+  "n_stations": 8,
+  "ig_per_m": 0.0022919960807588897
+ },
+ "registration": [],
+ "status": "ok",
+ "family": "M",
+ "density": "low",
+ "scene": "scene_M_low",
+ "scene_seed": 2,
+ "n_full_stations": 24,
+ "stations_budget": 8,
+ "n_patches": 672,
+ "config_hash": "7016dc479a",
+ "git_commit": "a7a24fa",
+ "runtime_s": 1.4
+}

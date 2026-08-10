@@ -1,0 +1,21 @@
+[e3] config_hash=4e164758ad commit=a22e680-dirty
+[e3] n_temp=0 scene_S_low/seed0: patches=526 gaps=60 vis_mae=0.0000
+[e3]   B10_full       awc=0.990 crit=0.864 (59.7s)
+[e3]   B11_disc       awc=0.990 crit=0.864 (107.8s)
+[e3] n_temp=0 scene_S_low/seed1: patches=486 gaps=42 vis_mae=0.0000
+[e3]   B10_full       awc=0.989 crit=1.000 (86.2s)
+[e3]   B11_disc       awc=0.989 crit=1.000 (62.7s)
+[e3] n_temp=0 scene_S_low/seed2: patches=522 gaps=44 vis_mae=0.0000
+[e3]   B10_full       awc=0.973 crit=0.923 (98.1s)
+[e3]   B11_disc       awc=0.973 crit=0.923 (76.6s)
+[e3] n_temp=0 scene_S_low/seed3: patches=516 gaps=50 vis_mae=0.0000
+[e3]   B10_full       awc=0.992 crit=0.882 (149.7s)
+[e3]   B11_disc       awc=0.992 crit=0.882 (51.3s)
+[e3] n_temp=0 scene_S_low/seed4: patches=522 gaps=46 vis_mae=0.0000
+[e3]   B10_full       awc=0.994 crit=0.900 (144.8s)
+[e3]   B11_disc       awc=0.994 crit=0.900 (37.4s)
+[e3] n_temp=0 scene_S_mid/seed0: patches=682 gaps=53 vis_mae=0.0000
+[e3]   B10_full       awc=0.983 crit=0.861 (144.7s)
+[e3]   B11_disc       awc=0.983 crit=0.861 (74.3s)
+[e3] n_temp=0 scene_S_mid/seed1: patches=654 gaps=60 vis_mae=0.0000
+[e3]   B10_full       awc=0.995 crit=0.977 (94.0s)

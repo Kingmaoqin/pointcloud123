@@ -1,0 +1,87 @@
+{
+ "method": "B10_full",
+ "seed": 4,
+ "history": [
+  {
+   "awc_gap_recovery": 0.0,
+   "asset_recovery": 0.0,
+   "dens_ok": 0.22383073496659242,
+   "crit_recall": 0.0,
+   "path_len_m": 0.0,
+   "n_stations": 0,
+   "ig_per_m": 0.0
+  },
+  {
+   "awc_gap_recovery": 0.49249965754387937,
+   "asset_recovery": 0.03886103297868003,
+   "dens_ok": 0.23051224944320714,
+   "crit_recall": 0.01818181818181818,
+   "path_len_m": 32.29594154601837,
+   "n_stations": 1,
+   "ig_per_m": 0.015249583507021103
+  },
+  {
+   "awc_gap_recovery": 0.6483714694774718,
+   "asset_recovery": 0.5582959491658734,
+   "dens_ok": 0.34075723830734966,
+   "crit_recall": 0.5,
+   "path_len_m": 100.39518395093587,
+   "n_stations": 2,
+   "ig_per_m": 0.006458192952705156
+  },
+  {
+   "awc_gap_recovery": 0.7620186277333961,
+   "asset_recovery": 0.7266902151562931,
+   "dens_ok": 0.40757238307349664,
+   "crit_recall": 0.7454545454545455,
+   "path_len_m": 129.88782463805515,
+   "n_stations": 3,
+   "ig_per_m": 0.0058667440913483145
+  },
+  {
+   "awc_gap_recovery": 0.8045726686509301,
+   "asset_recovery": 0.8469969404709373,
+   "dens_ok": 0.455456570155902,
+   "crit_recall": 0.9090909090909091,
+   "path_len_m": 182.38046532517444,
+   "n_stations": 4,
+   "ig_per_m": 0.00441150683115333
+  },
+  {
+   "awc_gap_recovery": 0.8145024720893708,
+   "asset_recovery": 0.853254006360356,
+   "dens_ok": 0.4576837416481069,
+   "crit_recall": 0.9181818181818182,
+   "path_len_m": 232.35533905932738,
+   "n_stations": 5,
+   "ig_per_m": 0.003505417501430443
+  },
+  {
+   "awc_gap_recovery": 0.8805102625904769,
+   "asset_recovery": 0.885078747768431,
+   "dens_ok": 0.49665924276169265,
+   "crit_recall": 0.9363636363636364,
+   "path_len_m": 254.7726009489054,
+   "n_stations": 6,
+   "ig_per_m": 0.003456063404428105
+  }
+ ],
+ "final": {
+  "awc_gap_recovery": 0.8805102625904769,
+  "asset_recovery": 0.885078747768431,
+  "dens_ok": 0.49665924276169265,
+  "crit_recall": 0.9363636363636364,
+  "path_len_m": 254.7726009489054,
+  "n_stations": 6,
+  "ig_per_m": 0.003456063404428105
+ },
+ "registration": [],
+ "status": "ok",
+ "n_temp": 6,
+ "vis_mae": 0.07712989814480446,
+ "scene": "scene_M_mid",
+ "scene_seed": 4,
+ "config_hash": "4e164758ad",
+ "git_commit": "e326f27",
+ "runtime_s": 128.6
+}

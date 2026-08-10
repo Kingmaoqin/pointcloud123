@@ -1,0 +1,77 @@
+{
+ "method": "B10_full",
+ "seed": 11,
+ "history": [
+  {
+   "awc_gap_recovery": 0.0,
+   "dens_ok": 0.2957957957957958,
+   "crit_recall": 0.0,
+   "path_len_m": 0.0,
+   "n_stations": 0,
+   "ig_per_m": 0.0
+  },
+  {
+   "awc_gap_recovery": 0.8367121574432511,
+   "dens_ok": 0.30180180180180183,
+   "crit_recall": 0.022222222222222223,
+   "path_len_m": 34.816756826189675,
+   "n_stations": 1,
+   "ig_per_m": 0.024031881016955144
+  },
+  {
+   "awc_gap_recovery": 0.9253910829367425,
+   "dens_ok": 0.38738738738738737,
+   "crit_recall": 0.5555555555555556,
+   "path_len_m": 70.63782463805515,
+   "n_stations": 2,
+   "ig_per_m": 0.013100503698668558
+  },
+  {
+   "awc_gap_recovery": 0.947372455876052,
+   "dens_ok": 0.47147147147147145,
+   "crit_recall": 0.7111111111111111,
+   "path_len_m": 126.44848480983498,
+   "n_stations": 3,
+   "ig_per_m": 0.007492161391263795
+  },
+  {
+   "awc_gap_recovery": 0.947372455876052,
+   "dens_ok": 0.47297297297297297,
+   "crit_recall": 0.7111111111111111,
+   "path_len_m": 153.08021279348026,
+   "n_stations": 4,
+   "ig_per_m": 0.006188732290006334
+  },
+  {
+   "awc_gap_recovery": 0.9687837259591431,
+   "dens_ok": 0.49099099099099097,
+   "crit_recall": 0.7777777777777778,
+   "path_len_m": 181.4264068711928,
+   "n_stations": 5,
+   "ig_per_m": 0.005339816527629024
+  },
+  {
+   "awc_gap_recovery": 0.9687837259591431,
+   "dens_ok": 0.4924924924924925,
+   "crit_recall": 0.7777777777777778,
+   "path_len_m": 203.143921292465,
+   "n_stations": 6,
+   "ig_per_m": 0.004768952572124427
+  }
+ ],
+ "final": {
+  "awc_gap_recovery": 0.9687837259591431,
+  "dens_ok": 0.4924924924924925,
+  "crit_recall": 0.7777777777777778,
+  "path_len_m": 203.143921292465,
+  "n_stations": 6,
+  "ig_per_m": 0.004768952572124427
+ },
+ "status": "ok",
+ "policy": "greedy_first",
+ "scene": "scene_S_mid",
+ "scene_seed": 11,
+ "config_hash": "5f597462b0",
+ "git_commit": "77e257c",
+ "runtime_s": 33.4
+}

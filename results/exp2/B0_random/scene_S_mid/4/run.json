@@ -4,73 +4,99 @@
  "history": [
   {
    "awc_gap_recovery": 0.0,
-   "dens_ok": 0.29036827195467424,
+   "asset_recovery": 0.0,
+   "dens_ok": 0.330028328611898,
+   "dens_ok_full_ref": 0.358356940509915,
+   "dens_ok_vs_full": 0.9209486166007905,
    "crit_recall": 0.0,
    "path_len_m": 0.0,
    "n_stations": 0,
    "ig_per_m": 0.0
   },
   {
-   "awc_gap_recovery": 0.0,
-   "dens_ok": 0.3342776203966006,
-   "crit_recall": 0.0,
-   "path_len_m": 11.24264068711928,
+   "awc_gap_recovery": 0.04077177220045317,
+   "asset_recovery": 0.12837124738720485,
+   "dens_ok": 0.4206798866855524,
+   "dens_ok_full_ref": 0.358356940509915,
+   "dens_ok_vs_full": 1.1739130434782608,
+   "crit_recall": 0.05357142857142857,
+   "path_len_m": 11.889087296526005,
    "n_stations": 1,
-   "ig_per_m": 0.0
+   "ig_per_m": 0.003429344169452494
   },
   {
-   "awc_gap_recovery": 0.0,
-   "dens_ok": 0.34560906515580736,
-   "crit_recall": 0.0,
-   "path_len_m": 24.510407640085646,
+   "awc_gap_recovery": 0.09235962900120478,
+   "asset_recovery": 0.38885346212473854,
+   "dens_ok": 0.4631728045325779,
+   "dens_ok_full_ref": 0.358356940509915,
+   "dens_ok_vs_full": 1.2924901185770752,
+   "crit_recall": 0.32142857142857145,
+   "path_len_m": 36.75304832720493,
    "n_stations": 2,
-   "ig_per_m": 0.0
+   "ig_per_m": 0.002512978737952448
   },
   {
-   "awc_gap_recovery": 0.0,
-   "dens_ok": 0.3640226628895184,
-   "crit_recall": 0.0,
-   "path_len_m": 28.19238815542511,
+   "awc_gap_recovery": 0.09659582203511322,
+   "asset_recovery": 0.39678997006124656,
+   "dens_ok": 0.47875354107648727,
+   "dens_ok_full_ref": 0.358356940509915,
+   "dens_ok_vs_full": 1.3359683794466404,
+   "crit_recall": 0.35714285714285715,
+   "path_len_m": 52.12436867076457,
    "n_stations": 3,
-   "ig_per_m": 0.0
+   "ig_per_m": 0.0018531797026693146
   },
   {
-   "awc_gap_recovery": 0.0,
-   "dens_ok": 0.3937677053824363,
-   "crit_recall": 0.0,
-   "path_len_m": 47.14949493661166,
+   "awc_gap_recovery": 0.09871391855206742,
+   "asset_recovery": 0.40075822402950056,
+   "dens_ok": 0.5042492917847026,
+   "dens_ok_full_ref": 0.358356940509915,
+   "dens_ok_vs_full": 1.407114624505929,
+   "crit_recall": 0.375,
+   "path_len_m": 73.22056274847712,
    "n_stations": 4,
-   "ig_per_m": 0.0
+   "ig_per_m": 0.001348172082358388
   },
   {
-   "awc_gap_recovery": 0.016977863471697857,
-   "dens_ok": 0.45042492917847027,
-   "crit_recall": 0.1388888888888889,
-   "path_len_m": 80.6850288425444,
+   "awc_gap_recovery": 0.09981527058931346,
+   "asset_recovery": 0.4022463192675958,
+   "dens_ok": 0.5141643059490085,
+   "dens_ok_full_ref": 0.358356940509915,
+   "dens_ok_vs_full": 1.4347826086956523,
+   "crit_recall": 0.375,
+   "path_len_m": 97.90254326381658,
    "n_stations": 5,
-   "ig_per_m": 0.00021042148357943702
+   "ig_per_m": 0.0010195370545210728
   },
   {
-   "awc_gap_recovery": 0.035568760537479566,
-   "dens_ok": 0.471671388101983,
-   "crit_recall": 0.25,
-   "path_len_m": 84.59924240491749,
+   "awc_gap_recovery": 0.09981527058931346,
+   "asset_recovery": 0.4022463192675958,
+   "dens_ok": 0.5169971671388102,
+   "dens_ok_full_ref": 0.358356940509915,
+   "dens_ok_vs_full": 1.442687747035573,
+   "crit_recall": 0.375,
+   "path_len_m": 116.31675682618967,
    "n_stations": 6,
-   "ig_per_m": 0.000420438286754824
+   "ig_per_m": 0.0008581331986281725
   }
  ],
  "final": {
-  "awc_gap_recovery": 0.035568760537479566,
-  "dens_ok": 0.471671388101983,
-  "crit_recall": 0.25,
-  "path_len_m": 84.59924240491749,
+  "awc_gap_recovery": 0.09981527058931346,
+  "asset_recovery": 0.4022463192675958,
+  "dens_ok": 0.5169971671388102,
+  "dens_ok_full_ref": 0.358356940509915,
+  "dens_ok_vs_full": 1.442687747035573,
+  "crit_recall": 0.375,
+  "path_len_m": 116.31675682618967,
   "n_stations": 6,
-  "ig_per_m": 0.000420438286754824
+  "ig_per_m": 0.0008581331986281725,
+  "stop_reason": "rounds"
  },
+ "registration": [],
  "status": "ok",
- "config_hash": "b0263d9f95",
- "git_commit": "65b9bbb-dirty",
+ "config_hash": "54f6a8f7d8",
+ "git_commit": "30ed463-dirty",
  "scene": "scene_S_mid",
  "scene_seed": 4,
- "runtime_s": 0.51
+ "runtime_s": 0.37
 }

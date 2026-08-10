@@ -54,10 +54,20 @@ class SimWorld:
     sensor: SensorModel        # 仿真实际角步长的 Θ
     plan_oracle: OcclusionOracle | None = None   # 设计 BIM 几何: 规划器用
 
+    # 规划环境模型的占据侧。None = 沿用由完整参考模型栅格化的可通行图(P100,
+    # 即完整环境几何先验)；否则为观测驱动的三态栅格，S3/S6 一律改用它。
+    env: object | None = None
+    # 规划器可用的目标表面几何（M_ref 中被判为待扫目标者）。弱先验下 S4 的
+    # 遮挡求交只用它加上已发现的环境占据几何，不得再用完整参考模型。
+    ref_tris: np.ndarray | None = None
+
     @classmethod
     def build(cls, scene: SceneModel, sensor: SensorModel,
               sim_dtheta_deg: float = 0.3, r_robot: float = 0.6,
-              by_triangle: bool = False) -> "SimWorld":
+              by_triangle: bool = False,
+              env_prior_frac: float = 1.0,
+              observed_env: bool = False,
+              prior_seed: int = 0) -> "SimWorld":
         """r_robot: 移动平台半径, 决定可通行图的膨胀量。0.6 m 是户外轮式平台的
         取值; 室内三脚架约 0.35 m, 实测在 CRAS 上把自由空间从 142 m² 放到
         207 m²(建筑占地 446 m²), 直接决定候选池与站位分布。"""
@@ -67,17 +77,37 @@ class SimWorld:
         # 预测。两套几何分开, 公式(27)(28) 的 Vis 才是可能出错的预测量, 而不是
         # 与评测真值同源的恒等式(否则"遮挡感知有效"无法被证伪)。
         # n_temp=0 时两者逐比特相同, 既有基准结果不受影响。
+        # 规划环境模型 M_plan 的遮挡侧初始内容。env_prior_frac=1.0 且
+        # observed_env=False 时与既有行为逐比特相同(完整环境几何先验)。
         bim = scene.bim_tri_mask()
-        plan_oracle = (oracle if bool(bim.all()) else
-                       OcclusionOracle(scene.vertices, scene.triangles[bim],
-                                       tri_to_patch[bim]))
+        prior = bim & scene.prior_tri_mask(env_prior_frac, seed=prior_seed)
+        plan_oracle = (oracle if bool(prior.all()) else
+                       OcclusionOracle(scene.vertices, scene.triangles[prior],
+                                       tri_to_patch[prior]))
+        ref_tris = prior
         sampler = PatchSampler(scene.vertices, scene.triangles, tri_to_patch)
         grid = build_trav_grid(scene, r_robot=r_robot, by_triangle=by_triangle)
+        env = None
+        if observed_env:
+            # 可通行空间改由观测建立: 初始全部 unknown, unknown 不当作 free。
+            from ..mapping.planning_env import PlanningEnvGrid
+            env = PlanningEnvGrid(scene.bounds_xy, res=grid.res, r_robot=r_robot)
+            # 唯一允许的先验是作业安全规程(带电体禁入区), 它与是否扫描无关
+            for c in scene.components:
+                if c.live and c.clearance_z < 1.8:
+                    env.add_safety_prior(c.bbox_min[:2], c.bbox_max[:2], c.d_safe)
         sim = FallbackSimulator(scene.vertices, scene.triangles, tri_to_patch,
                                 sensor, sim_dtheta_deg=sim_dtheta_deg)
         return cls(scene=scene, patches=patches, tri_to_patch=tri_to_patch,
                    oracle=oracle, sampler=sampler, grid=grid, sim=sim,
-                   sensor=sim.effective_sensor(), plan_oracle=plan_oracle)
+                   sensor=sim.effective_sensor(), plan_oracle=plan_oracle,
+                   env=env, ref_tris=ref_tris)
+
+
+def planning_map(world: SimWorld):
+    """S3/S6 使用的可通行图。弱先验下为观测驱动的 M_plan，否则为完整模型栅格化
+    所得的可通行图。集中一处取图，避免个别调用点漏改而偷偷读回完整模型。"""
+    return world.env if world.env is not None else world.grid
 
 
 def station_sample_masks(world: SimWorld, origin: np.ndarray) -> dict[int, np.ndarray]:
@@ -438,16 +468,17 @@ def _make_candidates(world: SimWorld, scores: pd.DataFrame, v0_xy, rng,
                 if executed_xy else np.zeros((0, 2)))
     # 一次单源 Dijkstra 取代逐候选 A*: 同一套 8 邻域权重与贴角规则, 距离逐位
     # 一致(实测最大差 0.000000), L/high 上 550 个候选省约 175 倍时间。
-    dfield = world.grid.distance_field(v0_xy)
+    gmap = planning_map(world)
+    dfield = gmap.distance_field(v0_xy)
 
     def _add(xy, target_pid, orientation):
-        proj = world.grid.project_to_free(xy, max_dist=2.0)
+        proj = gmap.project_to_free(xy, max_dist=2.0)
         if proj is None:
             return
         # 已执行站 r_dup 内的重复架站无新信息(确定性仿真), 剔除防原地重扫
         if len(exec_arr) and np.min(np.linalg.norm(exec_arr - np.asarray(proj), axis=1)) < r_dup:
             return
-        cell = world.grid.to_ij(proj)
+        cell = gmap.to_ij(proj)
         if cell in seen:
             return
         seen.add(cell)
@@ -524,9 +555,9 @@ def _bim_offline_plan(world: SimWorld, plan_oracle, rng,
 
     只用设计 BIM 的几何可见性, 不看覆盖率、不看缺口分数、不看实测点云。
     """
-    free = np.argwhere(world.grid._compute_free())
+    free = np.argwhere(planning_map(world)._compute_free())
     idx = rng.permutation(len(free))[:n_sites]
-    sites = [world.grid.to_xy(tuple(free[i])) for i in idx]
+    sites = [planning_map(world).to_xy(tuple(free[i])) for i in idx]
     pids = [int(v) for v in world.patches["patch_id"].to_numpy()]
     w = (world.patches["area"].to_numpy()
          * (1.0 + world.patches["engineering_importance"].to_numpy()))
@@ -571,11 +602,11 @@ def _select_next_station(world: SimWorld, obs: ObsState, cfg: EpisodeConfig,
         raise ValueError(f"未知方法 {method!r}; 已知: {sorted(KNOWN_METHODS)}")
     plan_oracle = plan_oracle if plan_oracle is not None else world.plan_oracle
     if method == "B0_random":
-        free_cells = np.argwhere(world.grid._compute_free())
+        free_cells = np.argwhere(planning_map(world)._compute_free())
         for _ in range(200):
             i, j = free_cells[rng.integers(len(free_cells))]
-            xy = world.grid.to_xy((i, j))
-            d, _ = world.grid.astar(v0_xy, xy)
+            xy = planning_map(world).to_xy((i, j))
+            d, _ = planning_map(world).astar(v0_xy, xy)
             if np.isfinite(d) and d <= budget_left:
                 return np.array([xy[0], xy[1], TRIPOD_Z]), d
         return None
@@ -591,11 +622,11 @@ def _select_next_station(world: SimWorld, obs: ObsState, cfg: EpisodeConfig,
         if plan is None:
             plan = _bim_offline_plan(world, plan_oracle, rng)
             obs._bbim_plan = plan
-        dfield_b = world.grid.distance_field(v0_xy)   # 每轮一次, 不在循环里
+        dfield_b = planning_map(world).distance_field(v0_xy)   # 每轮一次
         for k, xy in enumerate(plan):
             if k in getattr(obs, "_bbim_used", set()):
                 continue
-            d = float(dfield_b[world.grid.to_ij(xy)])
+            d = float(dfield_b[planning_map(world).to_ij(xy)])
             if not np.isfinite(d) or d > budget_left:
                 continue
             obs._bbim_used = getattr(obs, "_bbim_used", set()) | {k}
@@ -606,18 +637,18 @@ def _select_next_station(world: SimWorld, obs: ObsState, cfg: EpisodeConfig,
         # 平凡对照: 完全不使用任何缺口证据/可见性/密度模型, 只在可通行自由格中
         # 取"离已执行站最远"(max-min 离散度)。用于检验公式(26)-(45) 相对一个
         # 无信息启发式是否真有优势 —— 若无, 整套机制的收益主张不成立。
-        free_cells = np.argwhere(world.grid._compute_free())
+        free_cells = np.argwhere(planning_map(world)._compute_free())
         done = np.array([s.origin[:2] for s in obs.scans] + list(failed_xy or []),
                         dtype=float)
         best, best_d, best_score = None, None, -np.inf
         idx = rng.permutation(len(free_cells))[:400]   # 固定预算, 与 B0 同量级
         for t in idx:
             i, j = free_cells[t]
-            xy = np.asarray(world.grid.to_xy((i, j)), dtype=float)
+            xy = np.asarray(planning_map(world).to_xy((i, j)), dtype=float)
             sep = float(np.min(np.linalg.norm(done - xy[None, :], axis=1))) if len(done) else 1e9
             if sep < cfg.cand_r_dup or sep <= best_score:
                 continue
-            d, _ = world.grid.astar(v0_xy, xy)
+            d, _ = planning_map(world).astar(v0_xy, xy)
             if not np.isfinite(d) or d > budget_left:
                 continue
             best, best_d, best_score = xy, d, sep
@@ -706,7 +737,7 @@ def _select_next_station(world: SimWorld, obs: ObsState, cfg: EpisodeConfig,
     if not sel:
         return None
     pts_xy = [v0_xy] + [cs[k].position[:2] for k in sel]
-    D = world.grid.distance_matrix(pts_xy)
+    D = planning_map(world).distance_matrix(pts_xy)
     # 仅 tsp_first 策略需要完整路线；其余策略下 route 会被丢弃，而 solve_tsp 的
     # 时限搜索每轮要跑满 3 s（实测占单次 episode 用时的 26%），故按需调用。
     route = solve_tsp(D, start=0, time_limit_s=3) if cfg.exec_policy == "tsp_first" else []
@@ -767,7 +798,13 @@ def run_episode(world: SimWorld, init_origins: list[np.ndarray],
     rng = np.random.default_rng(cfg.seed)
     obs = ObsState(world=world)
     for k, o in enumerate(init_origins):
-        obs.add_station(o, f"init_{k}", seed=cfg.seed * 100 + k)
+        sc0 = obs.add_station(o, f"init_{k}", seed=cfg.seed * 100 + k)
+        if world.env is not None:
+            # M_plan 由**实际观测**建立：平台确实站过的地方为自由，回波所在处
+            # 为占据，其余保持 unknown。初始站是作业输入(它们产生了初始点云)，
+            # 各先验档一致，不构成规划器知识。
+            world.env.seed_free(o[:2], radius=max(world.env.r_robot * 2, 1.0))
+            world.env.integrate_scan(o, sc0.points)
     if gt is None:
         gt = build_ground_truth(world, list(obs.masks))
 
@@ -775,11 +812,13 @@ def run_episode(world: SimWorld, init_origins: list[np.ndarray],
     disc = None
     reg_log: list[dict] = []
     failed_xy: list[np.ndarray] = []
+    env = world.env      # 观测驱动的规划环境模型(弱先验时非 None)
     plan_oracle = world.plan_oracle
     if cfg.discover_occluders or cfg.method == "B11_disc":
-        bim = world.scene.bim_tri_mask()
-        disc = UnmodeledOccluders(world.scene.vertices, world.scene.triangles[bim],
-                                  world.tri_to_patch[bim], seed=cfg.seed)
+        base = (world.ref_tris if world.ref_tris is not None
+                else world.scene.bim_tri_mask())
+        disc = UnmodeledOccluders(world.scene.vertices, world.scene.triangles[base],
+                                  world.tri_to_patch[base], seed=cfg.seed)
         for scan in obs.scans:
             disc.update(scan.points)
         plan_oracle = disc.build_oracle()
@@ -819,6 +858,11 @@ def run_episode(world: SimWorld, init_origins: list[np.ndarray],
                 scan = None
         if scan is not None and disc is not None and disc.update(scan.points) > 0:
             plan_oracle = disc.build_oracle()   # 只在真有新发现时重建 BVH
+        if scan is not None and env is not None:
+            # 闭环二的另一半：新增观测不仅修正遮挡模型(回灌 S4)，也修正可通行
+            # 空间(回灌 S2)。此前 world.grid 在整个闭环中从不更新。
+            env.seed_free(origin[:2], radius=max(env.r_robot * 2, 1.0))
+            env.integrate_scan(origin, scan.points)
         path_len += d
         executed += 1
         v0_xy = tuple(origin[:2])
@@ -826,6 +870,8 @@ def run_episode(world: SimWorld, init_origins: list[np.ndarray],
                                        path_len, executed, cfg.rho0, cfg.lambda_e))
     final = dict(history[-1])
     final["stop_reason"] = stop_reason
+    if world.env is not None:
+        final["mplan_known_ratio"] = float(world.env.known_ratio())
     if cfg.registration_realism:
         final["n_reg_failed"] = int(sum(not r["accepted"] for r in reg_log))
     return {"method": cfg.method, "seed": cfg.seed, "gt": {k: (v.tolist() if isinstance(v, np.ndarray) else v)

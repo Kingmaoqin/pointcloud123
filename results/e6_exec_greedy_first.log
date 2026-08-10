@@ -1,0 +1,7 @@
+[e6] commit=da706f4-dirty  真实场景 {"vertices": 604187, "triangles": 1197750, "components": 256, "patches": 7019, "extent_m": [18.2, 24.49], "total_area_m2": 3836.5, "by_ifc_class": {"IfcFurnishingElement": 66, "IfcWallStandardCase": 61, "IfcOpeningElement": 54, "IfcWindow": 44, "IfcColumn": 10, "IfcCovering": 7, "IfcDoor": 6, "IfcSlab": 5, "IfcStairFlight": 2, "IfcBuildingElementProxy": 1}}
+[e6] SimWorld 构建 39s
+[e6] 缺口数: measured=748 synthetic=395 / 7019 分块; 实测覆盖均值 0.319
+[e6] 预算 28 站 (构件 256, 参考普查 29 站)
+[e6] measured  B10_full       awc=0.958 asset=0.980 crit=0.956 stop=rounds (2482.5s)
+[e6] synthetic B10_full       awc=0.797 asset=0.880 crit=0.625 stop=rounds (2398.0s)
+[e6] summary → /home/xqin5/patent_gap_nbv/results/exp6/summary.md
