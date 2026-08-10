@@ -1,6 +1,12 @@
 # 05 Frontier 探索基线对照（E8）
 
-结果路径 `results/exp8/`，汇总 `results/exp8/summary.md`，commit `a1fac1c`，
+> **本文件的数字产自 commit `a1fac1c`，该版本存在「平台被卡在自己正站着的位置上」
+> 的缺陷（见 `03_代码修改与测试记录.md` 第 4.4 节）。该缺陷会使任一方法提前以候选池
+> 枯竭告终，因此第四节「frontier 提前收工是其目标函数自己饱和」这一归因**必须在修复
+> 后重跑的结果上重新核对**。E8 已在 commit `0609f26` 上重跑，本文件待其完成后整体
+> 更新。**
+
+结果路径 `results/exp8/`，汇总 `results/exp8/summary.md`，
 config_hash `53d9cde1a0`。3 类场景 × 8 种子 × 2 先验档 × 3 方法 = **144 次运行**。
 
 ---
