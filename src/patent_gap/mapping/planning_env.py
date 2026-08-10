@@ -131,7 +131,10 @@ class PlanningEnvGrid:
             passable |= (self.state == UNKNOWN)
         self._tg._obstacle[:] = ~passable
         self._tg._free = None      # TravGrid 缓存 _free, 改 _obstacle 后须失效
-        free = self._tg._compute_free() | self._stood
+        # 平台站过的格恢复为可通行, 但**被观测确认占据的格除外** —— 站位圆盘半径
+        # 约 0.75 m, 若无条件放开, 站位附近一堵薄墙可能被圆盘跨过, A* 就能穿墙。
+        # 以观测为准: 平台站过是可通行的证据, 观测到占据是不可通行的证据, 后者更近。
+        free = self._tg._compute_free() | (self._stood & (self.state != OCCUPIED))
         # A*/距离场/投影都取 self._tg._free, 必须把合并结果写回, 否则平台站过的
         # 格在路径规划里仍是障碍。
         self._tg._free = free

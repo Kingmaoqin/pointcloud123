@@ -145,6 +145,20 @@ def test_a_position_the_platform_occupied_stays_traversable():
     assert np.isfinite(d[g.to_ij((5.0, 5.0))])
 
 
+def test_a_stood_cell_confirmed_occupied_is_not_forced_free():
+    """站位圆盘不得无条件放开——观测确认占据的格更近，A* 不许穿过去。
+
+    圆盘半径约 0.75 m，若无条件放开，站位附近一堵薄墙会被圆盘跨过。
+    """
+    g = PlanningEnvGrid((0, 0, 10, 10), res=0.25, r_robot=0.6)
+    g.seed_free((5.0, 5.0), radius=1.2)
+    assert g.is_free((5.3, 5.0))
+    # 该处随后被观测确认为占据
+    g.state[g.to_ij((5.3, 5.0))] = OCCUPIED
+    g._cache_key = None
+    assert not g.is_free((5.3, 5.0)), "已确认占据的格被站位圆盘强行放开了"
+
+
 def test_observation_marks_occupied_and_carves_free():
     """回波点所在处为占据，站位到回波点之间为自由；占据不被射线抹回自由。"""
     g = PlanningEnvGrid((0, 0, 10, 10), res=0.25, r_robot=0.0)
