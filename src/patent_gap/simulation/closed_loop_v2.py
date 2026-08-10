@@ -36,7 +36,7 @@ TRIPOD_Z = 2.0
 
 KNOWN_METHODS = frozenset({
     "B0_random", "Bdisp_maxmin", "Bbim_offline", "B1_patent",
-    "B5_occ_rng", "B10_full", "B11_disc",
+    "B5_occ_rng", "B10_full", "B11_disc", "Bfrontier",
 })
 
 
@@ -689,6 +689,60 @@ def _select_next_station(world: SimWorld, obs: ObsState, cfg: EpisodeConfig,
                 continue
             best, best_d, best_score = xy, d, sep
         if best is None:
+            return None
+        return np.array([best[0], best[1], TRIPOD_Z]), best_d
+
+    if method == "Bfrontier":
+        # 探索基线: 目标函数换成"把地图未知区变已知", 其余一律相同 —— 同平台、
+        # 同传感器、同起点、同预算、同站数上限、同安全约束、同 A*/距离场、同
+        # 去重半径、同成本折算(路径 + 单站架设当量)。差别只在收益口径。
+        #
+        # 候选取 frontier 栅格本身(Yamauchi 的做法), 不用本方法按目标分块生成的
+        # 候选环 —— 那是按任务缺口张成的集合, 拿给探索方法用等于替它挑好了地方。
+        # 收益按二维射线估计的新揭示未知格数, 与路径成本作性价比, 与本方法的
+        # 懒惰贪心同构。
+        env_ = world.env
+        if env_ is None:
+            raise ValueError("Bfrontier 需要观测驱动的 M_plan(observed_env=True); "
+                             "完整先验下不存在未知区, 探索基线无定义")
+        fr = env_.frontier_cells()
+        if not len(fr):
+            return None
+        # frontier 栅格本身按平台半径膨胀后**一个都不可通行** —— 未知区按障碍
+        # 处理, 而 frontier 的定义就是紧贴未知区。实测 971 个 frontier 栅格里
+        # 可通行的是 0 个, 基线因此一站也走不出去。这不是 frontier 方法弱, 是
+        # 实现把它卡死了。标准做法是驶向 frontier **附近**的可站位置, 不是驶向
+        # 边界格本身: 逐个投影到最近的可通行格, 再去重。
+        if len(fr) > 300:
+            fr = fr[rng.permutation(len(fr))[:300]]
+        pool, seen = [], set()
+        for i, j in fr:
+            p = env_.project_to_free(env_.to_xy((int(i), int(j))),
+                                     max_dist=3.0 * env_.r_robot + 1.0)
+            if p is None:
+                continue
+            key = env_.to_ij(p)
+            if key not in seen:
+                seen.add(key)
+                pool.append(np.asarray(p, dtype=float))
+        if not pool:
+            return None
+        done = np.array([s.origin[:2] for s in obs.scans] + list(failed_xy or []),
+                        dtype=float)
+        dfield = env_.distance_field(v0_xy)
+        scan_equiv = T_SCAN_DEFAULT * V_MOVE_DEFAULT
+        best, best_d, best_ratio = None, None, -np.inf
+        for xy in pool:
+            if len(done) and float(np.min(np.linalg.norm(done - xy[None, :], axis=1))) < cfg.cand_r_dup:
+                continue
+            d = float(dfield[env_.to_ij(xy)])
+            if not np.isfinite(d) or d > budget_left:
+                continue
+            g = env_.expected_unknown_gain(xy, world.sensor.r_max)
+            ratio = g / (d + scan_equiv)
+            if ratio > best_ratio:
+                best, best_d, best_ratio = xy, d, ratio
+        if best is None or best_ratio <= 0.0:
             return None
         return np.array([best[0], best[1], TRIPOD_Z]), best_d
 

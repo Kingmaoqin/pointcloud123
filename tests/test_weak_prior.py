@@ -172,6 +172,35 @@ def test_vis_audit_is_off_by_default_and_records_when_on():
     assert last["vis_over"] <= last["vis_mae"] + 1e-12
 
 
+def test_frontier_baseline_actually_moves_and_grows_the_map():
+    """探索基线必须真能用掉预算 —— 一个走不动的基线不构成对照。
+
+    frontier 栅格按平台半径膨胀后一个都不可通行(未知区按障碍处理, 而 frontier
+    的定义就是紧贴未知区), 直接拿边界格当目标会让它 0 站收场。此处锁住"投影到
+    邻近可站位置"这一修复。
+    """
+    scene = generate_scene(seed=0, family="S", density="low", n_temp=6)
+    w = cl.SimWorld.build(scene, SensorModel.from_config(SENSOR), sim_dtheta_deg=0.8,
+                          env_prior_frac=0.0, observed_env=True)
+    init = cl.default_init_stations(w, n=3)
+    cfg = cl.EpisodeConfig(stations_max=3, rounds_max=3, seed=0,
+                           method="Bfrontier", vis_audit=True)
+    r = cl.run_episode(w, init, cfg)
+    assert r["final"]["n_stations"] >= 1, "探索基线一站也没走出去"
+    kr = [h["mplan_known_ratio"] for h in r["history"] if "mplan_known_ratio" in h]
+    assert kr and kr[-1] >= kr[0], "探索基线没有扩大地图已知区"
+
+
+def test_frontier_baseline_requires_an_observation_driven_map():
+    """完整先验下不存在未知区, 探索基线无定义 —— 必须报错而不是静默退化。"""
+    scene = generate_scene(seed=0, family="S", density="low")
+    w = cl.SimWorld.build(scene, SensorModel.from_config(SENSOR), sim_dtheta_deg=0.8)
+    init = cl.default_init_stations(w, n=2)
+    cfg = cl.EpisodeConfig(stations_max=1, rounds_max=1, seed=0, method="Bfrontier")
+    with pytest.raises(ValueError, match="observed_env"):
+        cl.run_episode(w, init, cfg)
+
+
 def test_frontier_is_boundary_of_free_and_unknown():
     g = PlanningEnvGrid((0, 0, 10, 10), res=0.5, r_robot=0.0)
     assert len(g.frontier_cells()) == 0      # 全未知时没有 frontier

@@ -1,0 +1,18 @@
+[e7] config_hash=ce0d83b973 commit=1072ddb-dirty
+[e7] scene_S_low/seed0: patches=526 gaps=93 init=3
+[e7]   LEGACY B10_full  awc=0.992 asset=0.872 mae=0.036 inval=0.025 known=1.000 st=6 stop=rounds (35.0s)
+[e7]   LEGACY B11_disc  awc=0.982 asset=0.869 mae=0.007 inval=0.000 known=1.000 st=6 stop=rounds (34.8s)
+[e7]   P100   B10_full  awc=0.883 asset=0.683 mae=0.114 inval=0.082 known=0.940 st=6 stop=rounds (49.9s)
+[e7]   P100   B11_disc  awc=0.870 asset=0.662 mae=0.015 inval=0.002 known=0.940 st=6 stop=rounds (53.5s)
+[e7]   P75    B10_full  awc=0.882 asset=0.677 mae=0.143 inval=0.123 known=0.938 st=6 stop=rounds (83.2s)
+[e7]   P75    B11_disc  awc=0.920 asset=0.814 mae=0.018 inval=0.001 known=0.939 st=6 stop=rounds (72.0s)
+[e7]   P50    B10_full  awc=0.016 asset=0.019 mae=0.128 inval=0.097 known=0.826 st=1 stop=no_candidate (14.2s)
+[e7]   P50    B11_disc  awc=0.923 asset=0.830 mae=0.021 inval=0.001 known=0.940 st=6 stop=rounds (54.5s)
+[e7]   P0     B10_full  awc=0.016 asset=0.019 mae=0.129 inval=0.097 known=0.826 st=1 stop=no_candidate (23.9s)
+[e7]   P0     B11_disc  awc=0.016 asset=0.019 mae=0.133 inval=0.002 known=0.826 st=1 stop=no_candidate (22.8s)
+[e7] scene_S_low/seed1: patches=486 gaps=76 init=3
+[e7]   LEGACY B10_full  awc=0.979 asset=0.920 mae=0.038 inval=0.019 known=1.000 st=6 stop=rounds (68.3s)
+[e7]   LEGACY B11_disc  awc=0.969 asset=0.918 mae=0.014 inval=0.000 known=1.000 st=6 stop=rounds (36.5s)
+[e7]   P100   B10_full  awc=0.947 asset=0.807 mae=0.033 inval=0.016 known=0.949 st=6 stop=rounds (62.8s)
+[e7]   P100   B11_disc  awc=0.723 asset=0.513 mae=0.006 inval=0.000 known=0.949 st=4 stop=no_candidate (55.1s)
+[e7]   P75    B10_full  awc=0.973 asset=0.875 mae=0.060 inval=0.029 known=0.945 st=6 stop=rounds (63.5s)

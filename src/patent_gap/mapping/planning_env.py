@@ -134,6 +134,32 @@ class PlanningEnvGrid:
         nb[:, 1:] |= u[:, :-1]; nb[:, :-1] |= u[:, 1:]
         return np.argwhere(f & nb)
 
+    def expected_unknown_gain(self, xy, r_max: float, n_rays: int = 180) -> int:
+        """从该位置架站, 预计能把多少个 UNKNOWN 栅格变为已确认。
+
+        探索类方法的收益口径。二维等角射线自站位射出, 遇第一个 OCCUPIED 即止,
+        沿途 UNKNOWN 栅格计入(去重)。这是 frontier / NBV 探索里通行的地图信息
+        增益估计, 与本方法按目标缺口计价的收益是两个不同的量 —— 对照实验必须
+        两个都报, 否则会把"地图覆盖得快"读成"任务缺口补得好"。
+        """
+        i0, j0 = self.to_ij(xy)
+        n_step = max(int(np.ceil(r_max / self.res)), 1)
+        ang = np.linspace(0.0, 2 * np.pi, n_rays, endpoint=False)
+        t = (np.arange(1, n_step + 1) * self.res)[None, :]
+        ii = np.rint(i0 + np.cos(ang)[:, None] * t / self.res).astype(np.int64)
+        jj = np.rint(j0 + np.sin(ang)[:, None] * t / self.res).astype(np.int64)
+        inside = (ii >= 0) & (ii < self.nx) & (jj >= 0) & (jj < self.ny)
+        st = np.zeros(ii.shape, dtype=np.uint8)
+        st[inside] = self.state[ii[inside], jj[inside]]
+        # 射线在第一个占据格(或出界)处截断: 该步之前才算看得见
+        blocked = (st == OCCUPIED) | (~inside)
+        first = np.where(blocked.any(axis=1), blocked.argmax(axis=1), n_step)
+        live = np.arange(n_step)[None, :] < first[:, None]
+        sel = live & (st == UNKNOWN) & inside
+        if not sel.any():
+            return 0
+        return int(len(np.unique(ii[sel] * self.ny + jj[sel])))
+
     # ---------------------------------------------------------------- 委托
     def to_ij(self, xy):
         return self._tg.to_ij(xy)
