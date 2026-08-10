@@ -224,7 +224,7 @@ def fig3() -> None:
     在平面投影中表现为围绕形心的圆弧带，而非沿分块整段外扩的壳。
     """
     fig, ax = plt.subplots(figsize=(7.6, 5.6))
-    ax.set_xlim(-1.2, 13.5); ax.set_ylim(-2.4, 8.2)
+    ax.set_xlim(-1.2, 14.6); ax.set_ylim(-2.8, 8.2)
     ax.set_aspect("equal"); ax.axis("off")
 
     # 目标表面分块与其形心
@@ -244,8 +244,12 @@ def fig3() -> None:
         ang = sgn * half
         ax.plot([c[0], c[0] + 7.6 * np.cos(ang)], [c[1], c[1] + 7.6 * np.sin(ang)],
                 color="black", lw=0.8, ls=(0, (2, 3)))
-    _txt(ax, 9.2, c[1] + 4.9, L("法向锥的平面投影\n（方位角与俯仰角偏置范围）",
-                                "normal cone (azimuth + elevation offsets),\nshown in plan projection"), fontsize=7.4)
+    ang_lab = np.deg2rad(38.0)
+    ax.annotate("", xy=(c[0] + 6.9 * np.cos(ang_lab), c[1] + 6.9 * np.sin(ang_lab)),
+                xytext=(9.9, c[1] + 4.55),
+                arrowprops=dict(arrowstyle="-", lw=0.8, color="black"))
+    _txt(ax, 11.2, c[1] + 4.7, L("法向锥的平面投影\n（方位角与俯仰角偏置范围）",
+                                "normal cone (azimuth + elevation offsets),\nplan projection"), fontsize=7.4)
 
     th = np.linspace(-half, half, 240)
     for d, lab in ((2.4, "d1"), (4.4, "d2"), (6.6, "d3")):
@@ -260,16 +264,18 @@ def fig3() -> None:
                 np.concatenate([ys_o, ys_i[::-1]]), color="0.82", zorder=0)
         ax.plot(c[0] + d * np.cos(th), c[1] + d * np.sin(th),
                 color="black", lw=0.9, ls="dashed")
-        _txt(ax, c[0] + d * np.cos(-half) + 0.05, c[1] + d * np.sin(-half) - 0.5,
-             L(f"距离层 {lab}", f"shell {lab}"), fontsize=7.6)
+        aa_lab = np.deg2rad(-30.0)
+        _txt(ax, c[0] + (d + 0.62) * np.cos(aa_lab), c[1] + (d + 0.62) * np.sin(aa_lab),
+             L(f"距离层 {lab}", f"shell {lab}"), fontsize=7.4,
+             rotation=-30, rotation_mode="anchor")
 
     # 候选：位于距离层上（实心=保留），以及经投影后偏离层的一个（说明可偏离）
-    keep = [(2.4, -22), (4.4, -8), (4.4, 24), (6.6, 8), (6.6, -20)]
+    keep = [(2.4, -14), (4.4, -2), (4.4, 24), (6.6, 12), (6.6, -12)]
     for d, adeg in keep:
         aa = np.deg2rad(adeg)
         ax.plot(c[0] + d * np.cos(aa), c[1] + d * np.sin(aa), "o",
                 ms=7.5, mfc="black", mec="black")
-    drop = [(2.4, 33), (4.4, -34)]
+    drop = [(2.4, 33), (4.4, -35)]
     for d, adeg in drop:
         aa = np.deg2rad(adeg)
         ax.plot(c[0] + d * np.cos(aa), c[1] + d * np.sin(aa), "o",
@@ -286,11 +292,11 @@ def fig3() -> None:
     _txt(ax, 6.2, 7.95, L("图 3  候选补充扫描站位与距离层",
                           "Fig.3 Candidates and distance shells"),
          fontsize=10, fontweight="bold")
-    _txt(ax, 6.2, -1.75, L(
+    _txt(ax, 6.2, -2.05, L(
         "灰带=距离层：以分块形心为球心、以距离档为半径、限制在法向锥内的球面区段（图为其平面投影）",
         "shell: sphere of radius d about the centroid, restricted to the normal cone"),
         fontsize=7.0)
-    _txt(ax, 6.2, -2.15, L(
+    _txt(ax, 6.2, -2.48, L(
         "实心圆=保留的候选   空心圆=经自由空间投影、去重或可达性筛选后被剔除的候选   "
         "本图仅示出目标导向候选，S3 另由自由栅格节点生成的候选未示出",
         "filled=kept; hollow=rejected; grid-node candidates not shown"), fontsize=7.0)
@@ -460,8 +466,8 @@ def fig6() -> None:
             for x, y, w, h in small:
                 ax.plot(x + w / 2, y + h / 2, "*", ms=9, color="black")
             _txt(ax, 5.5, 0.55, L("（右）按构件分组、容量随构件数缩放：\n"
-                                  "每一有缺口构件均有表面分块入选",
-                                  "(b) per-component grouping: every gapped component represented"),
+                                  "在容量上限未触发时，各有缺口构件均有分块入选",
+                                  "(b) per-component grouping: every gapped component\nrepresented when the cap is not reached"),
                  fontsize=7.4)
     fig.suptitle(L("图 6  有缺口构件的目标表面分块选取",
                    "Fig.6 Target patch selection among gapped components"),
