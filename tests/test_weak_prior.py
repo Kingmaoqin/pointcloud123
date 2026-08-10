@@ -125,6 +125,26 @@ def test_unknown_is_not_free_by_default():
     assert g2._compute_free().all()
 
 
+def test_a_position_the_platform_occupied_stays_traversable():
+    """平台站过的地方不得被膨胀抹成障碍。
+
+    否则会出现"平台站在一个自己占不住的位置"这种物理上不可能的状态：其后自该处
+    出发的距离场全为无穷，全部候选被判不可达，任务以候选池枯竭告终。实测 P0 下
+    S/low seed0 的 B11 即因此只走 3 站（修复后 6 站）。
+    """
+    g = PlanningEnvGrid((0, 0, 10, 10), res=0.25, r_robot=0.6)
+    o = np.array([5.0, 5.0, 1.0])
+    g.seed_free(o[:2], radius=1.2)
+    # 紧贴站位撒一圈回波点：膨胀本会把站位所在格一并吃掉
+    ang = np.linspace(0, 2 * np.pi, 60, endpoint=False)
+    pts = np.stack([5.0 + 0.5 * np.cos(ang), 5.0 + 0.5 * np.sin(ang),
+                    np.full(60, 1.0)], axis=1)
+    g.integrate_scan(o, pts)
+    assert g.is_free((5.0, 5.0)), "平台站过的位置被膨胀抹掉了"
+    d = g.distance_field((5.0, 5.0))
+    assert np.isfinite(d[g.to_ij((5.0, 5.0))])
+
+
 def test_observation_marks_occupied_and_carves_free():
     """回波点所在处为占据，站位到回波点之间为自由；占据不被射线抹回自由。"""
     g = PlanningEnvGrid((0, 0, 10, 10), res=0.25, r_robot=0.0)

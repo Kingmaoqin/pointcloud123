@@ -55,6 +55,11 @@ class PlanningEnvGrid:
                             res=self.res, r_robot=self.r_robot)
         self._cache_key: tuple | None = None
         self._cache_free: np.ndarray | None = None
+        # 平台确实占据过的位置。它是比"射线穿越过"更强的可通行证据——平台若装不下,
+        # 就不可能站在那里。膨胀不得把这些格抹掉, 否则会出现"平台站在一个自己占不住
+        # 的位置"这种物理上不可能的状态, 其后距离场全为无穷、全部候选被判不可达。
+        self._stood = np.zeros((self.nx, self.ny), dtype=bool)
+        self._n_stood = 0
 
     # ---------------------------------------------------------------- 建图
     def integrate_scan(self, origin, points: np.ndarray,
@@ -85,15 +90,24 @@ class PlanningEnvGrid:
                 int((self.state == FREE).sum()) - n_free0)
 
     def seed_free(self, xy, radius: float = 1.0) -> None:
-        """把站位自身及其邻域标为自由——平台确实站在那里，是最直接的观测证据。"""
+        """把站位自身及其邻域标为自由——平台确实站在那里，是最直接的观测证据。
+
+        站位所在的一个平台半径的圆盘另记入 `_stood`：该处装得下平台是既成事实，
+        膨胀不得再把它抹掉（见 `_compute_free`）。
+        """
         i0, j0 = self.to_ij(xy)
         r = int(np.ceil(radius / self.res))
         ii, jj = np.meshgrid(np.arange(i0 - r, i0 + r + 1),
                              np.arange(j0 - r, j0 + r + 1), indexing="ij")
-        ok = ((ii >= 0) & (ii < self.nx) & (jj >= 0) & (jj < self.ny)
-              & ((ii - i0) ** 2 + (jj - j0) ** 2 <= r * r))
+        d2 = (ii - i0) ** 2 + (jj - j0) ** 2
+        inb = (ii >= 0) & (ii < self.nx) & (jj >= 0) & (jj < self.ny)
+        ok = inb & (d2 <= r * r)
         sel = self.state[ii[ok], jj[ok]]
         self.state[ii[ok], jj[ok]] = np.where(sel == OCCUPIED, OCCUPIED, FREE)
+        r_foot = int(np.ceil(self.r_robot / self.res))
+        foot = inb & (d2 <= max(r_foot, 1) ** 2)
+        self._stood[ii[foot], jj[foot]] = True
+        self._n_stood = int(self._stood.sum())
         self._cache_key = None
 
     def add_safety_prior(self, xy_min, xy_max, d_safe: float) -> None:
@@ -109,7 +123,7 @@ class PlanningEnvGrid:
     # ---------------------------------------------------------------- 查询
     def _compute_free(self) -> np.ndarray:
         key = (int((self.state == OCCUPIED).sum()), int((self.state == FREE).sum()),
-               bool(self.unknown_is_free))
+               bool(self.unknown_is_free), self._n_stood)
         if self._cache_key == key and self._cache_free is not None:
             return self._cache_free
         passable = (self.state == FREE)
@@ -117,7 +131,10 @@ class PlanningEnvGrid:
             passable |= (self.state == UNKNOWN)
         self._tg._obstacle[:] = ~passable
         self._tg._free = None      # TravGrid 缓存 _free, 改 _obstacle 后须失效
-        free = self._tg._compute_free()
+        free = self._tg._compute_free() | self._stood
+        # A*/距离场/投影都取 self._tg._free, 必须把合并结果写回, 否则平台站过的
+        # 格在路径规划里仍是障碍。
+        self._tg._free = free
         self._cache_key, self._cache_free = key, free
         return free
 
