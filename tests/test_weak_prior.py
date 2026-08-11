@@ -314,6 +314,96 @@ def test_frontier_baseline_requires_an_observation_driven_map():
         cl.run_episode(w, init, cfg)
 
 
+def test_known_prior_environment_is_not_rediscovered():
+    """已作为环境先验存在于 M_plan⁰ 的非目标构件，不得被 S7a 再判为"新发现"。
+
+    S7a 的判据是"回波点到**规划环境模型遮挡侧初始内容**的距离 > ε"，而该初始内容
+    正是 `world.ref_tris`。故先验中已有的构件，其自身表面上的点距离≈测距噪声，
+    远小于 ε=0.25 m，不会进入发现集合。
+    """
+    from patent_gap.occlusion.discovery import UnmodeledOccluders
+    from patent_gap.simulation.scene_gen import ENVIRONMENT_CLASSES
+
+    scene = generate_scene(seed=0, family="S", density="low", n_temp=6)
+    sensor = SensorModel.from_config(SENSOR)
+
+    def discovered(frac):
+        w = cl.SimWorld.build(scene, sensor, sim_dtheta_deg=0.8,
+                              env_prior_frac=frac, observed_env=True, prior_seed=1000)
+        d = UnmodeledOccluders(scene.vertices, scene.triangles[w.ref_tris],
+                               w.tri_to_patch[w.ref_tris], seed=0)
+        obs = cl.ObsState(world=w)
+        for k, o in enumerate(cl.default_init_stations(w, n=3)):
+            obs.add_station(o, f"i{k}", seed=k)
+            d.update(obs.scans[-1].points)
+        return w, d
+
+    env_in_bim = [c for c in scene.components
+                  if c.cls in ENVIRONMENT_CLASSES and c.cls != "ground" and c.in_bim]
+    assert env_in_bim, "该场景没有可调节的非目标环境构件"
+
+    # 先验全给(P100): 环境构件全在基准里, 只可能发现设计模型中不存在的临时占位物
+    w100, d100 = discovered(1.0)
+    for c in env_in_bim:
+        assert w100.ref_tris[c.tri_start], "P100 下环境构件应全部在先验中"
+    # 先验全不给(P0): 同一批环境构件此时不在基准里, 应当被发现
+    w0, d0 = discovered(0.0)
+    for c in env_in_bim:
+        assert not w0.ref_tris[c.tri_start]
+    assert d0.n_cells() > d100.n_cells(), \
+        "拿掉环境先验后, 发现的几何量应当增加"
+
+    # 判据层面的硬保证: 先验网格自身表面上的点, 到该网格的距离必小于 ε
+    import open3d as o3d
+    base = w100.ref_tris
+    scn = o3d.t.geometry.RaycastingScene()
+    scn.add_triangles(o3d.t.geometry.TriangleMesh(
+        o3d.core.Tensor(scene.vertices.astype(np.float32)),
+        o3d.core.Tensor(scene.triangles[base].astype(np.uint32))))
+    for c in env_in_bim[:3]:
+        tri = scene.triangles[c.tri_start:c.tri_end]
+        pts = scene.vertices[tri.reshape(-1)].astype(np.float32)
+        dist = scn.compute_distance(o3d.core.Tensor(pts)).numpy()
+        assert dist.max() < d100.eps, \
+            f"{c.cls} 在先验中, 其表面点却被判为离先验几何超过 ε"
+
+
+def test_discovery_accumulation_is_idempotent():
+    """同一批点二次并入不得新增几何——基准固定为初始先验，靠集合累积保证等价。"""
+    from patent_gap.occlusion.discovery import UnmodeledOccluders
+
+    scene = generate_scene(seed=0, family="S", density="low", n_temp=6)
+    w = cl.SimWorld.build(scene, SensorModel.from_config(SENSOR), sim_dtheta_deg=0.8,
+                          env_prior_frac=0.0, observed_env=True)
+    d = UnmodeledOccluders(scene.vertices, scene.triangles[w.ref_tris],
+                           w.tri_to_patch[w.ref_tris], seed=0)
+    obs = cl.ObsState(world=w)
+    sc0 = obs.add_station(cl.default_init_stations(w, n=3)[0], "i0", seed=0)
+    n1 = d.update(sc0.points)
+    n2 = d.update(sc0.points)
+    assert n1 > 0
+    assert n2 == 0, "同一批点二次并入不应新增体素"
+
+
+def test_free_carving_is_a_two_dimensional_approximation():
+    """二维 carving 会把射线掠过的低矮障碍标成自由——锁住该已知近似的边界。
+
+    这不是缺陷而是实施方式简化，但必须锁住两条自限机制：
+    带内回波产生的 OCCUPIED 优先，且不被后续射线抹回。
+    """
+    g = PlanningEnvGrid((0, 0, 20, 10), res=0.25, r_robot=0.0)
+    origin = np.array([1.0, 5.0, 2.0])          # 三脚架高度
+    # 一条射线从 2.0 m 高掠过, 击中 18 m 外的地面: 沿途(含 x=10 处)被标自由
+    g.integrate_scan(origin, np.array([[18.0, 5.0, 0.05]]))
+    assert g.state[g.to_ij((10.0, 5.0))] == FREE, "二维 carving 的既有行为变了"
+
+    # 该处若在通行高度带内产生过回波, 则占据优先, 且后续射线不得抹回
+    g.integrate_scan(origin, np.array([[10.0, 5.0, 1.0]]))
+    assert g.state[g.to_ij((10.0, 5.0))] == OCCUPIED
+    g.integrate_scan(origin, np.array([[18.0, 5.0, 0.05]]))
+    assert g.state[g.to_ij((10.0, 5.0))] == OCCUPIED, "已确认占据被射线抹回自由"
+
+
 def test_frontier_is_boundary_of_free_and_unknown():
     g = PlanningEnvGrid((0, 0, 10, 10), res=0.5, r_robot=0.0)
     assert len(g.frontier_cells()) == 0      # 全未知时没有 frontier

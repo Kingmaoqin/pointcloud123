@@ -114,12 +114,26 @@ def convert(md: Path, out: Path) -> None:
             i += 1; continue
 
         if ln.startswith(">"):
+            # 引用块的续行属于同一段。与列表项同理: 逐行独立处理会把跨行的 **粗体**
+            # 拆开, 后半截的 ** 原样出现在 Word 里。空的 "> " 行分段, 引用内的列表项
+            # 与表格行各自起段, 结构不被吞掉。
+            def _q(s: str) -> str:
+                return s[1:].lstrip() if s.startswith(">") else s
+            parts, k = [_q(ln).rstrip()], i + 1
+            while k < len(lines) and lines[k].startswith(">"):
+                nxt = _q(lines[k]).rstrip()
+                if not nxt or re.match(r"^([-*]\s|\d+\.\s|\||#{1,6}\s)", nxt):
+                    break
+                parts.append(nxt); k += 1
             p = doc.add_paragraph()
             p.paragraph_format.left_indent = Pt(18)
-            _emit_inline(p, ln.lstrip("> ").rstrip())
+            _emit_inline(p, "".join(parts))
             for r in p.runs:
                 r.italic = True
-            i += 1; continue
+            i = k
+            if i < len(lines) and lines[i].startswith(">") and not _q(lines[i]).strip():
+                i += 1          # 空引用行只作分段, 不另起空段落
+            continue
 
         def _absorb(idx: int, first: str) -> tuple[str, int]:
             """列表项的续行属于同一项。逐行独立处理会把跨行的 **粗体** 拆开，
