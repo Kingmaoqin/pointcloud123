@@ -42,8 +42,9 @@
 `plan_oracle` 在既有全部正式实验中直接复用评测用的 `oracle`（`bim_tri_mask()` 恒为
 全真），即规划器预测可见性与仿真器生成"实际看到什么"用的是同一份几何。**[A]**
 
-**修复**：`plan_oracle` 初始内容改为 `prior_tri_mask(env_prior_frac)`，P0 时仅剩
-M_ref 目标表面与地面。
+**修复**：`plan_oracle` 初始内容改为 `prior_tri_mask(env_prior_frac)` —— 即该先验档
+实际提供的 M_vis 初始内容；P0 档为 M_ref 目标表面与地面（不含任何可调节的非目标环境
+构件）。
 
 ### 2.3 规划器绕开了设计模型里查不到的临时占位物
 
