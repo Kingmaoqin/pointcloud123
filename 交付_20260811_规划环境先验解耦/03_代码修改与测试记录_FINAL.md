@@ -78,7 +78,7 @@
 
 ### 4.3 目标集与 M_ref 口径不一致
 
-见 `06_Oracle_Leakage_Audit.md` 第 2.4 节。
+见 `06_Oracle_Leakage_Audit_FINAL.md` 第 2.4 节。
 
 ### 4.4 平台被卡在自己正站着的位置上
 
@@ -208,7 +208,9 @@ E7 与 E8 的每个 `run.json` 记录 `git_commit`，续跑时若与当前不符
 
 ### 8.2 测试
 
-`python -m pytest tests/ -q` → **125 passed**（含 `tests/test_weak_prior.py` 18 项）。
+E7/E8 正式结果产自 commit `5116dae`；**该版本当时 125 项测试全部通过**。完成最终 S7a 与 FREE-carving 核查后新增 3 项回归测试，**当前最终交付测试集共 128 项，全部通过**。
+
+分层：`5116dae` 时 `tests/test_weak_prior.py` 为 18 项（全套 125）；本轮核查后为 21 项（全套 128）。**E7/E8 未因新增测试而重跑** —— 新增的 3 项只锁定既有行为，不改变任何算法路径。
 
 ### 8.3 实验产物
 
