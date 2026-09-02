@@ -16,3 +16,7 @@ outputs/
 external/TS40K/
 
 .gradio/
+
+# 迁移包为派生产物, 由 scripts/build_migration_bundle.sh 重建
+迁移包_pointcloud123/
+迁移包_pointcloud123.tar.gz
